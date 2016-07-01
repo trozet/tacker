@@ -24,6 +24,7 @@ import yaml
 import requests
 import json
 import re
+import copy
 
 from keystoneclient.v2_0 import client as ks_client
 from oslo_config import cfg
@@ -417,24 +418,26 @@ class DeviceOpenDaylight():
             br_dict = self.find_ovs_br(sfs_dict[sf], network_map)
             LOG.debug(_('br_dict from find_ovs %s'), br_dict)
             if br_dict is not None:
+                br_id = br_dict['node-id']
                 br_name = br_dict['br_name']
-                if br_name in br_mapping:
-                    br_mapping[br_name]['sfs'] = [sf]+br_mapping[br_name]['sfs']
-                    br_mapping[br_name][sf] = dict()
-                    br_mapping[br_name][sf]['tap_port'] = br_dict['tap_port']
+                if br_id in br_mapping:
+                    br_mapping[br_id]['sfs'] = [sf]+br_mapping[br_id]['sfs']
+                    br_mapping[br_id][sf] = dict()
+                    br_mapping[br_id][sf]['tap_port'] = br_dict['tap_port']
                 else:
-                    br_mapping[br_name] = dict()
-                    br_mapping[br_name]['sfs'] = [sf]
-                    br_mapping[br_name]['ovs_ip'] = br_dict['ovs_ip']
-                    br_mapping[br_name][sf] = dict()
-                    br_mapping[br_name][sf]['tap_port'] = br_dict['tap_port']
+                    br_mapping[br_id] = dict()
+                    br_mapping[br_id]['br_name'] = br_name
+                    br_mapping[br_id]['sfs'] = [sf]
+                    br_mapping[br_id]['ovs_ip'] = br_dict['ovs_ip']
+                    br_mapping[br_id][sf] = dict()
+                    br_mapping[br_id][sf]['tap_port'] = br_dict['tap_port']
                     prev_sff_dict = self.find_existing_sffs(br_mapping)
 
-                    if prev_sff_dict is not None and br_name in prev_sff_dict:
-                        br_mapping[br_name]['sff_name'] = prev_sff_dict[br_name]['name']
+                    if prev_sff_dict is not None and br_id in prev_sff_dict:
+                        br_mapping[br_id]['sff_name'] = prev_sff_dict[br_id]['name']
                     else:
                         # Must be a new SFF
-                        br_mapping[br_name]['sff_name'] = 'sff' + str(self.sff_counter)
+                        br_mapping[br_id]['sff_name'] = 'sff' + str(self.sff_counter)
                         self.sff_counter += 1
             else:
                 LOG.debug(_('Could not find OVS bridge for %s'), sf)
@@ -520,7 +523,7 @@ class DeviceOpenDaylight():
             temp_sff_dp_loc['data-plane-locator']['port'] = '6633'
             temp_sff_dp_loc['data-plane-locator']['ip'] = bridge_mapping[br]['ovs_ip']
             # temp_sff_dp_loc['service-function-forwarder-ovs:ovs-bridge'] = br
-            temp_bridge_dict = {'bridge-name': br}
+            temp_bridge_dict = {'bridge-name': bridge_mapping[br]['br_name']}
             sf_dicts = list()
             for sf in bridge_mapping[br]['sfs']:
                 # build sf portion of dict
@@ -562,7 +565,7 @@ class DeviceOpenDaylight():
                 temp_sff['service-node'] = ''
                 temp_sff['service-function-forwarder-ovs:ovs-bridge'] = temp_bridge_dict
 
-            sff_list.append(temp_sff)
+            sff_list.append(copy.deepcopy(temp_sff))
 
         LOG.debug(_('SFF list output is %s'), sff_list)
         return sff_list
@@ -590,6 +593,7 @@ class DeviceOpenDaylight():
                                         if external_id['external-id-value'] == sf_id:
                                             print 'Found!'
                                             print node_entry['ovsdb:bridge-name']
+                                            bridge_dict['node-id'] = node_entry['node-id']
                                             bridge_dict['br_name'] = node_entry['ovsdb:bridge-name']
                                             full_node_id = node_entry['node-id']
                                             node_id = re.sub('/bridge.*$', '', full_node_id)
