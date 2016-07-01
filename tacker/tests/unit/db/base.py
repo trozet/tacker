@@ -32,14 +32,9 @@ class SqlFixture(fixtures.Fixture):
         engine = db_api.get_engine()
         if not SqlFixture._TABLES_ESTABLISHED:
             model_base.BASE.metadata.create_all(engine)
-            SqlFixture._TABLES_ESTABLISHED = True
 
         def clear_tables():
-            with engine.begin() as conn:
-                for table in reversed(
-                        model_base.BASE.metadata.sorted_tables):
-                    conn.execute(table.delete())
-
+            model_base.BASE.metadata.drop_all(engine)
         self.addCleanup(clear_tables)
 
 

@@ -23,14 +23,13 @@ from sqlalchemy import orm
 from sqlalchemy.orm import exc as orm_exc
 from sqlalchemy import sql
 
-from tacker.db import db_base
 from tacker.db import model_base
 from tacker.db import models_v1
+from tacker.db.nfvo.db_base.vnffg_db import VnffgDbMixin
 from tacker.db import types
 from tacker.db.vm import vm_db
 from tacker.extensions import nfvo
 from tacker import manager
-
 
 VIM_ATTRIBUTES = ('id', 'type', 'tenant_id', 'name', 'description',
                   'placement_attr', 'shared', 'is_default', 'status')
@@ -60,7 +59,7 @@ class VimAuth(model_base.BASE, models_v1.HasId):
     __table_args__ = (sa.UniqueConstraint('auth_url'), {})
 
 
-class NfvoPluginDb(nfvo.NFVOPluginBase, db_base.CommonDbMixin):
+class NfvoPluginDb(VnffgDbMixin, nfvo.NFVOPluginBase):
 
     def __init__(self):
         super(NfvoPluginDb, self).__init__()
