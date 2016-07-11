@@ -1,0 +1,15 @@
+[Unit]
+Description=OpenStack Tacker Server
+After=syslog.target network.target
+
+[Service]
+Type=notify
+NotifyAccess=all
+TimeoutStartSec=0
+Restart=always
+User=root
+ExecStart=/etc/init.d/tacker-server start
+ExecStop=/etc/init.d/tacker-server stop
+
+[Install]
+WantedBy=multi-user.target
