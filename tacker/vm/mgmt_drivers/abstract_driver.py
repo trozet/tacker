@@ -1,8 +1,4 @@
-# vim: tabstop=4 shiftwidth=4 softtabstop=4
-#
 # Copyright 2013, 2014 Intel Corporation.
-# Copyright 2013, 2014 Isaku Yamahata <isaku.yamahata at intel com>
-#                                     <isaku.yamahata at gmail com>
 # All Rights Reserved.
 #
 #
@@ -17,15 +13,13 @@
 #    WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 #    License for the specific language governing permissions and limitations
 #    under the License.
-#
-# @author: Isaku Yamahata, Intel Corporation.
 
 import abc
 
+from oslo_serialization import jsonutils
 import six
 
 from tacker.api import extensions
-from tacker.openstack.common import jsonutils
 from tacker.vm import constants
 
 
@@ -65,8 +59,9 @@ class DeviceMGMTAbstractDriver(extensions.PluginInterface):
         pass
 
     def mgmt_get_config(self, plugin, context, device):
-        """
-        returns dict of file-like objects which will be passed to hosting
+        """Get a dict of objects.
+
+        Returns dict of file-like objects which will be passed to hosting
         device.
         It depends on drivers how to use it.
         for nova case, it can be used for meta data, file injection or
@@ -87,63 +82,10 @@ class DeviceMGMTAbstractDriver(extensions.PluginInterface):
     def mgmt_call(self, plugin, context, device, kwargs):
         pass
 
-    def mgmt_service_driver(self, plugin, context, device, service_instance):
-        # use same mgmt driver to communicate with service
-        return self.get_name()
-
-    def mgmt_service_create_pre(self, plugin, context, device,
-                                service_instance):
-        pass
-
-    def mgmt_service_create_post(self, plugin, context, device,
-                                 service_instance):
-        pass
-
-    def mgmt_service_update_pre(self, plugin, context, device,
-                                service_instance):
-        pass
-
-    def mgmt_service_update_post(self, plugin, context, device,
-                                 service_instance):
-        pass
-
-    def mgmt_service_delete_pre(self, plugin, context, device,
-                                service_instance):
-        pass
-
-    def mgmt_service_delete_post(self, plugin, context, device,
-                                 service_instance):
-        pass
-
-    @abc.abstractmethod
-    def mgmt_service_address(self, plugin, context, device, service_instance):
-        pass
-
-    @abc.abstractmethod
-    def mgmt_service_call(self, plugin, context, device,
-                          service_instance, kwargs):
-        pass
-
 
 class DeviceMGMTByNetwork(DeviceMGMTAbstractDriver):
     def mgmt_url(self, plugin, context, device):
         mgmt_entries = [sc_entry for sc_entry in device.service_context
-                        if (sc_entry.role == constants.ROLE_MGMT and
-                            sc_entry.port_id)]
-        if not mgmt_entries:
-            return
-        port = plugin._core_plugin.get_port(context, mgmt_entries[0].port_id)
-        if not port:
-            return
-        mgmt_url = port['fixed_ips'][0]     # subnet_id and ip_address
-        mgmt_url['network_id'] = port['network_id']
-        mgmt_url['port_id'] = port['id']
-        mgmt_url['mac_address'] = port['mac_address']
-        return jsonutils.dumps(mgmt_url)
-
-    def mgmt_service_address(self, plugin, context, device, service_instance):
-        mgmt_entries = [sc_entry for sc_entry
-                        in service_instance.service_context
                         if (sc_entry.role == constants.ROLE_MGMT and
                             sc_entry.port_id)]
         if not mgmt_entries:

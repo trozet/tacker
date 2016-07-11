@@ -14,6 +14,7 @@
 # limitations under the License.
 
 import routes as routes_mapper
+from six import iteritems
 import six.moves.urllib.parse as urlparse
 import webob
 import webob.dec
@@ -21,10 +22,7 @@ import webob.exc
 
 from tacker.api import extensions
 from tacker.api.v1 import attributes
-from tacker.openstack.common import log as logging
 from tacker import wsgi
-
-LOG = logging.getLogger(__name__)
 
 
 class Index(wsgi.Application):
@@ -38,7 +36,7 @@ class Index(wsgi.Application):
                     'link': ['href', 'rel']}}}
 
         layout = []
-        for name, collection in self.resources.iteritems():
+        for name, collection in iteritems(self.resources):
             href = urlparse.urljoin(req.path_url, collection)
             resource = {'name': name,
                         'collection': collection,

@@ -1,5 +1,3 @@
-# vim: tabstop=4 shiftwidth=4 softtabstop=4
-
 # Copyright 2012 OpenStack Foundation
 # All Rights Reserved.
 #
@@ -26,6 +24,7 @@ class TestAttributes(base.BaseTestCase):
 
     def _construct_dict_and_constraints(self):
         """Constructs a test dictionary and a definition of constraints.
+
         :return: A (dictionary, constraint) tuple
         """
         constraints = {'key1': {'type:values': ['val1', 'val2'],

@@ -22,18 +22,13 @@ import sys
 
 import eventlet
 eventlet.monkey_patch()
-
 from oslo_config import cfg
+from oslo_service import service as common_service
 
 from tacker.common import config
-from tacker.openstack.common import service as common_service
-from tacker import service
-
 from tacker.openstack.common import gettextutils
-from tacker.openstack.common import log as logging
+from tacker import service
 gettextutils.install('tacker', lazy=True)
-
-LOG = logging.getLogger(__name__)
 
 
 def main():
@@ -46,8 +41,8 @@ def main():
 
     try:
         tacker_api = service.serve_wsgi(service.TackerApiService)
-        launcher = common_service.launch(tacker_api,
-                                         workers=cfg.CONF.api_workers)
+        launcher = common_service.launch(cfg.CONF, tacker_api,
+                                         workers=cfg.CONF.api_workers or None)
         launcher.wait()
     except KeyboardInterrupt:
         pass

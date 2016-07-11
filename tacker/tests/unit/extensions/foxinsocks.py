@@ -1,5 +1,3 @@
-# vim: tabstop=4 shiftwidth=4 softtabstop=4
-
 # Copyright 2011 OpenStack Foundation.
 # All Rights Reserved.
 #
@@ -17,8 +15,9 @@
 
 import abc
 
+from oslo_serialization import jsonutils
+
 from tacker.api import extensions
-from tacker.openstack.common import jsonutils
 from tacker import wsgi
 
 
@@ -77,7 +76,7 @@ class Foxinsocks(object):
         request_exts = []
 
         def _goose_handler(req, res):
-            #NOTE: This only handles JSON responses.
+            # NOTE: This only handles JSON responses.
             # You can use content type header to test for XML.
             data = jsonutils.loads(res.body)
             data['FOXNSOX:googoose'] = req.GET.get('chewing')
@@ -89,7 +88,7 @@ class Foxinsocks(object):
         request_exts.append(req_ext1)
 
         def _bands_handler(req, res):
-            #NOTE: This only handles JSON responses.
+            # NOTE: This only handles JSON responses.
             # You can use content type header to test for XML.
             data = jsonutils.loads(res.body)
             data['FOXNSOX:big_bands'] = 'Pig Bands!'

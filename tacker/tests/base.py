@@ -1,5 +1,3 @@
-# vim: tabstop=4 shiftwidth=4 softtabstop=4
-
 # Copyright 2010-2011 OpenStack Foundation
 # All Rights Reserved.
 #
@@ -30,6 +28,7 @@ import fixtures
 import mock
 from oslo_config import cfg
 from oslo_messaging import conffixture as messaging_conffixture
+from six import iteritems
 import testtools
 
 from tacker.common import config
@@ -81,7 +80,7 @@ class BaseTestCase(testtools.TestCase):
         if check_plugin_deallocation:
             gc.collect()
 
-            #TODO(marun) Ensure that mocks are deallocated?
+            # TODO(marun) Ensure that mocks are deallocated?
             if plugin() and not isinstance(plugin(), mock.Base):
                 self.fail('The plugin for this test was not deallocated.')
 
@@ -166,11 +165,6 @@ class BaseTestCase(testtools.TestCase):
             'tacker.common.exceptions.TackerException.use_fatal_exceptions',
             fake_use_fatal_exceptions))
 
-        # don't actually start RPC listeners when testing
-        self.useFixture(fixtures.MonkeyPatch(
-            'tacker.common.rpc_compat.Connection.consume_in_threads',
-            fake_consume_in_threads))
-
         self.useFixture(fixtures.MonkeyPatch(
             'oslo.messaging.Notifier', fake_notifier.FakeNotifier))
 
@@ -201,7 +195,7 @@ class BaseTestCase(testtools.TestCase):
         test by the fixtures cleanup process.
         """
         group = kw.pop('group', None)
-        for k, v in kw.iteritems():
+        for k, v in iteritems(kw):
             CONF.set_override(k, v, group)
 
     @contextlib.contextmanager

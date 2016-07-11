@@ -18,8 +18,12 @@ run_tests.log
 setuptools*.egg/
 subunit.log
 .testrepository
+.idea/
 .tox/
 .venv/
 *.mo
 *.sw?
 *~
+
+# Files created by releasenotes build
+releasenotes/build

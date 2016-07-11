@@ -1,4 +1,3 @@
-# vim: tabstop=4 shiftwidth=4 softtabstop=4
 # Copyright 2011 OpenStack Foundation.
 # All Rights Reserved.
 #
@@ -43,8 +42,9 @@ class StubExtension(object):
 
 class StubPlugin(object):
 
-    def __init__(self, supported_extensions=[]):
-        self.supported_extension_aliases = supported_extensions
+    def __init__(self, supported_extensions=None):
+        self.supported_extension_aliases = supported_extensions \
+            if supported_extensions else []
 
 
 class ExtensionExpectingPluginInterface(StubExtension):

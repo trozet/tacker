@@ -1,5 +1,3 @@
-# vim: tabstop=4 shiftwidth=4 softtabstop=4
-
 # Copyright (c) 2012 OpenStack Foundation.
 # All Rights Reserved.
 #
@@ -19,6 +17,8 @@ import os
 
 import mock
 from oslo_config import cfg
+from oslo_utils import uuidutils
+import six
 import six.moves.urllib.parse as urlparse
 import webob
 from webob import exc
@@ -33,7 +33,6 @@ from tacker.common import exceptions as n_exc
 from tacker import context
 from tacker import manager
 from tacker.openstack.common import policy as common_policy
-from tacker.openstack.common import uuidutils
 from tacker import policy
 from tacker.tests import base
 from tacker.tests import fake_notifier
@@ -134,9 +133,11 @@ class APIv2TestCase(APIv2TestBase):
         fields.extend(policy_attrs)
         return fields
 
-    def _get_collection_kwargs(self, skipargs=[], **kwargs):
+    def _get_collection_kwargs(self, skipargs=None, **kwargs):
         args_list = ['filters', 'fields', 'sorts', 'limit', 'marker',
                      'page_reverse']
+        if skipargs is None:
+            skipargs = []
         args_dict = dict((arg, mock.ANY)
                          for arg in set(args_list) - set(skipargs))
         args_dict.update(kwargs)
@@ -537,7 +538,7 @@ class JSONV2TestCase(APIv2TestBase, testlib_api.WebTestCase):
             output_dict = res['networks'][0]
             input_dict['shared'] = False
             self.assertEqual(len(input_dict), len(output_dict))
-            for k, v in input_dict.iteritems():
+            for k, v in six.iteritems(input_dict):
                 self.assertEqual(v, output_dict[k])
         else:
             # expect no results
@@ -927,7 +928,8 @@ class JSONV2TestCase(APIv2TestBase, testlib_api.WebTestCase):
         return_value.update(initial_input['port'])
 
         instance = self.plugin.return_value
-        instance.get_network.return_value = {'tenant_id': unicode(tenant_id)}
+        instance.get_network.return_value = {'tenant_id':
+            six.text_type(tenant_id)}
         instance.get_ports_count.return_value = 1
         instance.create_port.return_value = return_value
         res = self.api.post(_get_path('ports', fmt=self.fmt),
@@ -1120,7 +1122,8 @@ class SubresourceTest(base.BaseTestCase):
 
         # Save the global RESOURCE_ATTRIBUTE_MAP
         self.saved_attr_map = {}
-        for resource, attrs in attributes.RESOURCE_ATTRIBUTE_MAP.iteritems():
+        for resource, attrs in six.iteritems(
+                attributes.RESOURCE_ATTRIBUTE_MAP):
             self.saved_attr_map[resource] = attrs.copy()
 
         self.config_parse()
@@ -1294,7 +1297,8 @@ class ExtensionTestCase(base.BaseTestCase):
 
         # Save the global RESOURCE_ATTRIBUTE_MAP
         self.saved_attr_map = {}
-        for resource, attrs in attributes.RESOURCE_ATTRIBUTE_MAP.iteritems():
+        for resource, attrs in six.iteritems(
+                attributes.RESOURCE_ATTRIBUTE_MAP):
             self.saved_attr_map[resource] = attrs.copy()
 
         # Create the default configurations
@@ -1350,7 +1354,7 @@ class ExtensionTestCase(base.BaseTestCase):
         self.assertNotIn('v2attrs:something_else', net)
 
 
-class TestSubresourcePlugin():
+class TestSubresourcePlugin(object):
         def get_network_dummies(self, context, network_id,
                                 filters=None, fields=None):
             return []

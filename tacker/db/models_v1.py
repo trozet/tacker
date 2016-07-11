@@ -13,28 +13,21 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
+from oslo_utils import uuidutils
 import sqlalchemy as sa
 
-from tacker.openstack.common import uuidutils
+from tacker.db import types
 
 
 class HasTenant(object):
     """Tenant mixin, add to subclasses that have a tenant."""
 
-    # NOTE(jkoelker) tenant_id is just a free form string ;(
-    tenant_id = sa.Column(sa.String(255))
+    tenant_id = sa.Column(sa.String(64), nullable=False)
 
 
 class HasId(object):
     """id mixin, add to subclasses that have an id."""
 
-    id = sa.Column(sa.String(36),
+    id = sa.Column(types.Uuid,
                    primary_key=True,
                    default=uuidutils.generate_uuid)
-
-
-class HasStatusDescription(object):
-    """Status with description mixin."""
-
-    status = sa.Column(sa.String(16), nullable=False)
-    status_description = sa.Column(sa.String(255))

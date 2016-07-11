@@ -1,6 +1,4 @@
 # Copyright 2014 Intel Corporation.
-# Copyright 2014 Isaku Yamahata <isaku.yamahata at intel com>
-#                               <isaku.yamahata at gmail com>
 # All Rights Reserved.
 #
 #
@@ -15,8 +13,6 @@
 #    WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 #    License for the specific language governing permissions and limitations
 #    under the License.
-#
-# @author: Isaku Yamahata, Intel Corporation.
 
 import sqlalchemy as sa
 
@@ -25,7 +21,7 @@ from tacker.db import model_base
 
 
 class ProxyMgmtPort(model_base.BASE):
-    device_id = sa.Column(sa.String(255), primary_key=True)
+    device_id = sa.Column(sa.String(64), primary_key=True)
     port_id = sa.Column(sa.String(36), nullable=False)
     dst_transport_url = sa.Column(sa.String(255))
     svr_proxy_id = sa.Column(sa.String(36))
@@ -35,7 +31,7 @@ class ProxyMgmtPort(model_base.BASE):
 
 
 class ProxyServicePort(model_base.BASE):
-    service_instance_id = sa.Column(sa.String(255), primary_key=True)
+    service_instance_id = sa.Column(sa.String(64), primary_key=True)
     svr_proxy_id = sa.Column(sa.String(36))
     svr_ns_proxy_id = sa.Column(sa.String(36))
     clt_proxy_id = sa.Column(sa.String(36))

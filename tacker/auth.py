@@ -1,5 +1,3 @@
-# vim: tabstop=4 shiftwidth=4 softtabstop=4
-
 #    Copyright 2012 OpenStack Foundation
 #
 #    Licensed under the Apache License, Version 2.0 (the "License"); you may
@@ -15,12 +13,12 @@
 #    under the License.
 
 from oslo_config import cfg
+from oslo_log import log as logging
+from oslo_middleware import request_id
 import webob.dec
 import webob.exc
 
 from tacker import context
-from tacker.openstack.common import log as logging
-from tacker.openstack.common.middleware import request_id
 from tacker import wsgi
 
 LOG = logging.getLogger(__name__)
@@ -72,6 +70,6 @@ def pipeline_factory(loader, global_conf, **local_conf):
     filters = [loader.get_filter(n) for n in pipeline[:-1]]
     app = loader.get_app(pipeline[-1])
     filters.reverse()
-    for filter in filters:
-        app = filter(app)
+    for f in filters:
+        app = f(app)
     return app

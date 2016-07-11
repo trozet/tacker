@@ -1,5 +1,3 @@
-# vim: tabstop=4 shiftwidth=4 softtabstop=4
-
 # Copyright (c) 2013 Intel Corporation.
 # All Rights Reserved.
 #
@@ -14,9 +12,6 @@
 #    WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 #    License for the specific language governing permissions and limitations
 #    under the License.
-#
-# @author: Zhongyue Luo, Intel Corporation.
-#
 
 from testtools import matchers
 from webob import exc

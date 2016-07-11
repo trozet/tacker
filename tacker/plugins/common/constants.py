@@ -1,5 +1,3 @@
-# vim: tabstop=4 shiftwidth=4 softtabstop=4
-
 # Copyright 2012 OpenStack Foundation.
 # All Rights Reserved.
 #
@@ -19,11 +17,13 @@
 CORE = "CORE"
 DUMMY = "DUMMY"
 VNFM = "VNFM"
+NFVO = "NFVO"
 
 COMMON_PREFIXES = {
     CORE: "",
     DUMMY: "/dummy_svc",
     VNFM: "",
+    NFVO: ""
 }
 
 # Service operation status constants

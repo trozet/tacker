@@ -20,12 +20,12 @@ Routines for configuring Tacker
 import os
 
 from oslo_config import cfg
+from oslo_db import options as db_options
+from oslo_log import log as logging
 import oslo_messaging
 from paste import deploy
 
 from tacker.common import utils
-from tacker.openstack.common.db import options as db_options
-from tacker.openstack.common import log as logging
 from tacker import version
 
 
@@ -34,7 +34,7 @@ LOG = logging.getLogger(__name__)
 core_opts = [
     cfg.StrOpt('bind_host', default='0.0.0.0',
                help=_("The host IP to bind to")),
-    cfg.IntOpt('bind_port', default=8888,
+    cfg.IntOpt('bind_port', default=9890,
                help=_("The port to bind to")),
     cfg.StrOpt('api_paste_config', default="api-paste.ini",
                help=_("The API paste config file to use")),
@@ -88,18 +88,25 @@ core_cli_opts = [
                       "This directory must be writable by the agent.")),
 ]
 
+logging.register_options(cfg.CONF)
 # Register the configuration options
 cfg.CONF.register_opts(core_opts)
 cfg.CONF.register_cli_opts(core_cli_opts)
 
 # Ensure that the control exchange is set correctly
 oslo_messaging.set_transport_defaults(control_exchange='tacker')
-_SQL_CONNECTION_DEFAULT = 'sqlite://'
-# Update the default QueuePool parameters. These can be tweaked by the
-# configuration variables - max_pool_size, max_overflow and pool_timeout
-db_options.set_defaults(sql_connection=_SQL_CONNECTION_DEFAULT,
-                        sqlite_db='', max_pool_size=10,
-                        max_overflow=20, pool_timeout=10)
+
+
+def set_db_defaults():
+    # Update the default QueuePool parameters. These can be tweaked by the
+    # conf variables - max_pool_size, max_overflow and pool_timeout
+    db_options.set_defaults(
+        cfg.CONF,
+        connection='sqlite://',
+        sqlite_db='', max_pool_size=10,
+        max_overflow=20, pool_timeout=10)
+
+set_db_defaults()
 
 
 def init(args, **kwargs):
@@ -119,7 +126,7 @@ def setup_logging(conf):
     :param conf: a cfg.ConfOpts object
     """
     product_name = "tacker"
-    logging.setup(product_name)
+    logging.setup(conf, product_name)
     LOG.info(_("Logging enabled!"))
 
 

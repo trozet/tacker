@@ -20,6 +20,7 @@ Utility methods for working with WSGI servers redux
 import sys
 
 import netaddr
+from oslo_log import log as logging
 import six
 import webob.dec
 import webob.exc
@@ -27,7 +28,6 @@ import webob.exc
 from tacker.api.v1 import attributes
 from tacker.common import exceptions
 from tacker.openstack.common import gettextutils
-from tacker.openstack.common import log as logging
 from tacker import wsgi
 
 
@@ -39,7 +39,9 @@ class Request(wsgi.Request):
 
 
 def Resource(controller, faults=None, deserializers=None, serializers=None):
-    """Represents an API entity resource and the associated serialization and
+    """API entity resource.
+
+    Represents an API entity resource and the associated serialization and
     deserialization logic
     """
     xml_deserializer = wsgi.XMLDeserializer(attributes.get_attr_metadata())

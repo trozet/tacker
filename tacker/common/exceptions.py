@@ -17,7 +17,8 @@
 Tacker base exception handling.
 """
 
-from tacker.openstack.common import excutils
+from oslo_utils import excutils
+import six
 
 
 class TackerException(Exception):
@@ -41,7 +42,7 @@ class TackerException(Exception):
                     super(TackerException, self).__init__(self.message)
 
     def __unicode__(self):
-        return unicode(self.msg)
+        return six.text_type(self.msg)
 
     def use_fatal_exceptions(self):
         return False
@@ -238,3 +239,7 @@ class DeviceIDNotOwnedByTenant(Conflict):
 
 class InvalidCIDR(BadRequest):
     message = _("Invalid CIDR %(input)s given as IP prefix")
+
+
+class MgmtDriverException(TackerException):
+    message = _("VNF configuration failed")

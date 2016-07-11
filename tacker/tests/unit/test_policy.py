@@ -15,19 +15,19 @@
 
 """Test of Policy Engine For Tacker"""
 
-import urllib2
-
 import fixtures
 import mock
 import six
+
+from oslo_serialization import jsonutils as json
+from oslo_utils import importutils
+from six.moves.urllib import request as urlrequest
 
 import tacker
 from tacker.api.v1 import attributes
 from tacker.common import exceptions
 from tacker import context
 from tacker import manager
-from tacker.openstack.common import importutils
-from tacker.openstack.common import jsonutils as json
 from tacker.openstack.common import policy as common_policy
 from tacker import policy
 from tacker.tests import base
@@ -126,7 +126,7 @@ class PolicyTestCase(base.BaseTestCase):
         def fakeurlopen(url, post_data):
             return six.StringIO("True")
 
-        with mock.patch.object(urllib2, 'urlopen', new=fakeurlopen):
+        with mock.patch.object(urlrequest, 'urlopen', new=fakeurlopen):
             action = "example:get_http"
             target = {}
             result = policy.enforce(self.context, action, target)
@@ -137,7 +137,7 @@ class PolicyTestCase(base.BaseTestCase):
         def fakeurlopen(url, post_data):
             return six.StringIO("False")
 
-        with mock.patch.object(urllib2, 'urlopen', new=fakeurlopen):
+        with mock.patch.object(urlrequest, 'urlopen', new=fakeurlopen):
             action = "example:get_http"
             target = {}
             self.assertRaises(exceptions.PolicyNotAuthorized, policy.enforce,

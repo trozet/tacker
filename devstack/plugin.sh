@@ -1,4 +1,4 @@
-#plugin.shh - Devstack extras script to install tacker
+# plugin.sh - Devstack extras script to install tacker
 
 # Save trace setting
 XTRACE=$(set +o | grep xtrace)
@@ -14,7 +14,6 @@ if is_service_enabled tacker; then
         # Perform installation of service source
         echo_summary "Installing Tacker"
         install_tacker
-        install_tackerclient
 
     elif [[ "$1" == "stack" && "$2" == "post-config" ]]; then
         # Configure after the other layer 1 and 2 services have been configured
@@ -30,8 +29,14 @@ if is_service_enabled tacker; then
         start_tacker_api
         echo_summary "Installing tacker horizon"
         tacker_horizon_install
+        echo_summary "Modifying Heat policy.json file"
+        modify_heat_flavor_policy_rule
         echo_summary "Setup initial tacker network"
         tacker_create_initial_network
+        echo_summary "Upload OpenWrt image"
+        tacker_create_openwrt_image
+        echo_summary "Registering default VIM"
+        tacker_register_default_vim
     fi
 
     if [[ "$1" == "unstack" ]]; then

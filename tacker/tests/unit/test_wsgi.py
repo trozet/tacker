@@ -1,5 +1,3 @@
-# vim: tabstop=4 shiftwidth=4 softtabstop=4
-
 # Copyright 2013 OpenStack Foundation.
 # All Rights Reserved.
 #
@@ -47,7 +45,7 @@ class TestWSGIServer(base.BaseTestCase):
         server.stop()
         server.wait()
 
-    @mock.patch('tacker.openstack.common.service.ProcessLauncher')
+    @mock.patch('oslo_service.service.ProcessLauncher')
     def test_start_multiple_workers(self, ProcessLauncher):
         launcher = ProcessLauncher.return_value
 
@@ -340,7 +338,7 @@ class RequestDeserializerTest(testtools.TestCase):
     def test_deserialize(self):
         """Test RequestDeserializer.deserialize."""
         with mock.patch.object(
-            self.deserializer, 'get_action_args') as mock_method:
+                self.deserializer, 'get_action_args') as mock_method:
             mock_method.return_value = {'action': 'create'}
             request = wsgi.Request.blank('/')
             request.headers['Accept'] = 'application/xml'
@@ -783,7 +781,7 @@ class ResourceTest(base.BaseTestCase):
         def my_fault_body_function():
             return 'off'
 
-        class FakeRequest():
+        class FakeRequest(object):
             def __init__(self):
                 self.url = 'http://where.no'
                 self.environ = 'environ'
@@ -823,7 +821,7 @@ class ResourceTest(base.BaseTestCase):
         def my_fault_body_function():
             return 'off'
 
-        class FakeRequest():
+        class FakeRequest(object):
             def __init__(self):
                 self.url = 'http://where.no'
                 self.environ = 'environ'

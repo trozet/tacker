@@ -11,8 +11,6 @@
 #    WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 #    License for the specific language governing permissions and limitations
 #    under the License.
-#
-# @author: Mark McClain, DreamHost
 
 import os
 
@@ -22,6 +20,7 @@ from alembic import script as alembic_script
 from alembic import util as alembic_util
 from oslo_config import cfg
 
+from tacker.db.migration.models import head  # noqa
 
 HEAD_FILENAME = 'HEAD'
 
@@ -89,7 +88,7 @@ def validate_head_file(config):
 
     head_path = os.path.join(script.versions, HEAD_FILENAME)
     if (os.path.isfile(head_path) and
-        open(head_path).read().strip() == script.get_current_head()):
+            open(head_path).read().strip() == script.get_current_head()):
         return
     else:
         alembic_util.err(_('HEAD file does not match migration timeline head'))
@@ -150,5 +149,5 @@ def main():
     config.tacker_config = CONF
 
     CONF()
-    #TODO(gongysh) enable logging
+    # TODO(gongysh) enable logging
     CONF.command.func(config, CONF.command.name)

@@ -13,10 +13,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from oslo_db.sqlalchemy import models
 from sqlalchemy.ext import declarative
 from sqlalchemy import orm
-
-from tacker.openstack.common.db.sqlalchemy import models
 
 
 class TackerBase(models.ModelBase):
@@ -29,7 +28,7 @@ class TackerBase(models.ModelBase):
         return self
 
     def next(self):
-        n = self._i.next().name
+        n = next(self._i).name
         return n, getattr(self, n)
 
     def __repr__(self):

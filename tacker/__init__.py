@@ -1,5 +1,3 @@
-# vim: tabstop=4 shiftwidth=4 softtabstop=4
-
 # Copyright 2011 OpenStack Foundation
 # All Rights Reserved.
 #
@@ -17,5 +15,9 @@
 
 import gettext
 
+import six
 
-gettext.install('tacker', unicode=1)
+if six.PY2:
+    gettext.install('tacker', unicode=1)
+else:
+    gettext.install('tacker')

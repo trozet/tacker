@@ -14,18 +14,16 @@
 #    under the License.
 
 from oslo_config import cfg
+from oslo_log import log as logging
+from oslo_service import periodic_task
 
-from tacker.common import rpc_compat
 from tacker.common import utils
-from tacker.openstack.common import importutils
-from tacker.openstack.common import log as logging
-from tacker.openstack.common import periodic_task
 
 
 LOG = logging.getLogger(__name__)
 
 
-class Manager(rpc_compat.RpcCallback, periodic_task.PeriodicTasks):
+class Manager(periodic_task.PeriodicTasks):
 
     # Set RPC API version to 1.0 by default.
     RPC_API_VERSION = '1.0'
@@ -61,7 +59,8 @@ def validate_post_plugin_load():
     If the configuration is invalid then the method will return an error
     message. If all is OK then it will return None.
     """
-    pass
+    message = None
+    return message
 
 
 def validate_pre_plugin_load():
@@ -70,7 +69,8 @@ def validate_pre_plugin_load():
     If the configuration is invalid then the method will return an error
     message. If all is OK then it will return None.
     """
-    pass
+    message = None
+    return message
 
 
 class TackerManager(object):
@@ -101,6 +101,27 @@ class TackerManager(object):
         self.service_plugins = {}
         self._load_service_plugins()
 
+    @staticmethod
+    def load_class_for_provider(namespace, plugin_provider):
+        """Loads plugin using alias or class name
+
+        Load class using stevedore alias or the class name
+        :param namespace: namespace where alias is defined
+        :param plugin_provider: plugin alias or class name
+        :returns plugin that is loaded
+        :raises ImportError if fails to load plugin
+        """
+
+        try:
+            return utils.load_class_by_alias_or_classname(namespace,
+                    plugin_provider)
+        except ImportError:
+            raise ImportError(_("Plugin '%s' not found.") % plugin_provider)
+
+    def _get_plugin_instance(self, namespace, plugin_provider):
+        plugin_class = self.load_class_for_provider(namespace, plugin_provider)
+        return plugin_class()
+
     def _load_service_plugins(self):
         """Loads service plugins.
 
@@ -112,14 +133,10 @@ class TackerManager(object):
         for provider in plugin_providers:
             if provider == '':
                 continue
-            try:
-                LOG.info(_("Loading Plugin: %s"), provider)
-                plugin_class = importutils.import_class(provider)
-            except ImportError:
-                LOG.exception(_("Error loading plugin"))
-                raise ImportError(_("Plugin not found."))
-            plugin_inst = plugin_class()
+            LOG.info(_("Loading Plugin: %s"), provider)
 
+            plugin_inst = self._get_plugin_instance('tacker.service_plugins',
+                                                    provider)
             # only one implementation of svc_type allowed
             # specifying more than one plugin
             # for the same type is a fatal exception
@@ -129,7 +146,6 @@ class TackerManager(object):
                                  plugin_inst.get_plugin_type())
 
             self.service_plugins[plugin_inst.get_plugin_type()] = plugin_inst
-
             # # search for possible agent notifiers declared in service plugin
             # # (needed by agent management extension)
             # if (hasattr(self.plugin, 'agent_notifiers') and

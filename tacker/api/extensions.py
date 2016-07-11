@@ -19,6 +19,7 @@ import imp
 import os
 
 from oslo_config import cfg
+from oslo_log import log as logging
 import routes
 import six
 import webob.dec
@@ -27,7 +28,6 @@ import webob.exc
 from tacker.api.v1 import attributes
 from tacker.common import exceptions
 import tacker.extensions
-from tacker.openstack.common import log as logging
 from tacker import policy
 from tacker import wsgi
 
@@ -167,7 +167,7 @@ class ExtensionDescriptor(object):
         if not extension_attrs_map:
             return
 
-        for resource, attrs in extension_attrs_map.iteritems():
+        for resource, attrs in six.iteritems(extension_attrs_map):
             extended_attrs = extended_attributes.get(resource)
             if extended_attrs:
                 attrs.update(extended_attrs)
@@ -197,7 +197,7 @@ class ActionExtensionController(wsgi.Controller):
     def action(self, request, id):
         input_dict = self._deserialize(request.body,
                                        request.get_content_type())
-        for action_name, handler in self.action_handlers.iteritems():
+        for action_name, handler in six.iteritems(self.action_handlers):
             if action_name in input_dict:
                 return handler(input_dict, request, id)
         # no action handler found (bump to downstream application)
@@ -239,13 +239,13 @@ class ExtensionController(wsgi.Controller):
 
     def index(self, request):
         extensions = []
-        for _alias, ext in self.extension_manager.extensions.iteritems():
+        for _alias, ext in six.iteritems(self.extension_manager.extensions):
             extensions.append(self._translate(ext))
         return dict(extensions=extensions)
 
     def show(self, request, id):
         # NOTE(dprince): the extensions alias is used as the 'id' for show
-        ext = self.extension_manager.extensions.get(id, None)
+        ext = self.extension_manager.extensions.get(id)
         if not ext:
             raise webob.exc.HTTPNotFound(
                 _("Extension with alias %s does not exist") % id)
@@ -280,7 +280,7 @@ class ExtensionMiddleware(wsgi.Middleware):
 
             LOG.debug(_('Extended resource: %s'),
                       resource.collection)
-            for action, method in resource.collection_actions.iteritems():
+            for action, method in six.iteritems(resource.collection_actions):
                 conditions = dict(method=[method])
                 path = "/%s/%s" % (resource.collection, action)
                 with mapper.submapper(controller=resource.controller,
@@ -480,8 +480,9 @@ class ExtensionManager(object):
                         continue
                 try:
                     extended_attrs = ext.get_extended_resources(version)
-                    for resource, resource_attrs in extended_attrs.iteritems():
-                        if attr_map.get(resource, None):
+                    for resource, resource_attrs in six.iteritems(
+                            extended_attrs):
+                        if attr_map.get(resource):
                             attr_map[resource].update(resource_attrs)
                         else:
                             attr_map[resource] = resource_attrs
@@ -522,7 +523,8 @@ class ExtensionManager(object):
             LOG.debug(_('Ext namespace: %s'), extension.get_namespace())
             LOG.debug(_('Ext updated: %s'), extension.get_updated())
         except AttributeError as ex:
-            LOG.exception(_("Exception loading extension: %s"), unicode(ex))
+            LOG.exception(_("Exception loading extension: %s"),
+                six.text_type(ex))
             return False
         return True
 
@@ -556,16 +558,17 @@ class ExtensionManager(object):
                     ext_name = mod_name[0].upper() + mod_name[1:]
                     new_ext_class = getattr(mod, ext_name, None)
                     if not new_ext_class:
-                        LOG.warn(_('Did not find expected name '
-                                   '"%(ext_name)s" in %(file)s'),
-                                 {'ext_name': ext_name,
-                                  'file': ext_path})
+                        LOG.warning(_('Did not find expected name '
+                                      '"%(ext_name)s" in %(file)s'),
+                                    {'ext_name': ext_name,
+                                     'file': ext_path})
                         continue
                     new_ext = new_ext_class()
                     self.add_extension(new_ext)
             except Exception as exception:
-                LOG.warn(_("Extension file %(f)s wasn't loaded due to "
-                           "%(exception)s"), {'f': f, 'exception': exception})
+                LOG.warning(_("Extension file %(f)s wasn't loaded due to "
+                              "%(exception)s"),
+                            {'f': f, 'exception': exception})
 
     def add_extension(self, ext):
         # Do nothing if the extension doesn't check out

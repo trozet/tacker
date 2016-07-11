@@ -1,5 +1,3 @@
-# vim: tabstop=4 shiftwidth=4 softtabstop=4
-
 # Copyright (c) 2012 OpenStack Foundation.
 # All Rights Reserved.
 #
@@ -16,14 +14,16 @@
 #    under the License.
 
 import netaddr
+from six import iteritems
 import webob.exc
+
+from oslo_log import log as logging
 
 from tacker.api import api_common
 from tacker.api.v1 import attributes
 from tacker.api.v1 import resource as wsgi_resource
 from tacker.common import exceptions
 from tacker.common import rpc as n_rpc
-from tacker.openstack.common import log as logging
 from tacker import policy
 
 
@@ -49,8 +49,7 @@ class Controller(object):
     def __init__(self, plugin, collection, resource, attr_info,
                  allow_bulk=False, member_actions=None, parent=None,
                  allow_pagination=False, allow_sorting=False):
-        if member_actions is None:
-            member_actions = []
+        member_actions = member_actions or []
         self._plugin = plugin
         self._collection = collection.replace('-', '_')
         self._resource = resource.replace('-', '_')
@@ -63,10 +62,7 @@ class Controller(object):
         self._native_sorting = self._is_native_sorting_supported()
         self._policy_attrs = [name for (name, info) in self._attr_info.items()
                               if info.get('required_by_policy')]
-        self._notifier = n_rpc.get_notifier('network')
-        # if cfg.CONF.notify_nova_on_port_data_changes:
-        #     from tacker.notifiers import nova
-        #     self._nova_notifier = nova.Notifier()
+        self._notifier = n_rpc.get_notifier('nfv')
         self._member_actions = member_actions
         self._primary_key = self._get_primary_key()
         if self._allow_pagination and self._native_pagination:
@@ -95,7 +91,7 @@ class Controller(object):
                                                          self._resource)
 
     def _get_primary_key(self, default_primary_key='id'):
-        for key, value in self._attr_info.iteritems():
+        for key, value in iteritems(self._attr_info):
             if value.get('primary_key', False):
                 return key
         return default_primary_key
@@ -130,9 +126,9 @@ class Controller(object):
                     context,
                     '%s:%s' % (self._plugin_handlers[self.SHOW], attr_name),
                     data,
-                    might_not_exist=True):
-                    # this attribute is visible, check next one
-                    continue
+                        might_not_exist=True):
+                        # this attribute is visible, check next one
+                        continue
             # if the code reaches this point then either the policy check
             # failed or the attribute was not visible in the first place
             attributes_to_exclude.append(attr_name)
@@ -155,7 +151,7 @@ class Controller(object):
     def _filter_attributes(self, context, data, fields_to_strip=None):
         if not fields_to_strip:
             return data
-        return dict(item for item in data.iteritems()
+        return dict(item for item in iteritems(data)
                     if (item[0] not in fields_to_strip))
 
     def _do_field_list(self, original_fields):
@@ -324,7 +320,7 @@ class Controller(object):
             return objs
         # Note(salvatore-orlando): broad catch as in theory a plugin
         # could raise any kind of exception
-        except Exception as ex:
+        except Exception:
             for obj in objs:
                 obj_deleter = getattr(self._plugin,
                                       self._plugin_handlers[self.DELETE])
@@ -342,7 +338,7 @@ class Controller(object):
             # plugin raised might have been created or not in the db.
             # We need a way for ensuring that if it has been created,
             # it is then deleted
-            raise ex
+            raise
 
     def create(self, request, body=None, **kwargs):
         """Creates a new instance of the requested entity."""
@@ -446,7 +442,7 @@ class Controller(object):
         # Load object to check authz
         # but pass only attributes in the original body and required
         # by the policy engine to the policy 'brain'
-        field_list = [name for (name, value) in self._attr_info.iteritems()
+        field_list = [name for (name, value) in iteritems(self._attr_info)
                       if (value.get('required_by_policy') or
                           value.get('primary_key') or
                           'default' not in value)]
@@ -535,13 +531,13 @@ class Controller(object):
         Controller._verify_attributes(res_dict, attr_info)
 
         if is_create:  # POST
-            for attr, attr_vals in attr_info.iteritems():
+            for attr, attr_vals in iteritems(attr_info):
                 if attr_vals['allow_post']:
                     if ('default' not in attr_vals and
-                        attr not in res_dict):
-                        msg = _("Failed to parse request. Required "
-                                "attribute '%s' not specified") % attr
-                        raise webob.exc.HTTPBadRequest(msg)
+                            attr not in res_dict):
+                            msg = _("Failed to parse request. Required "
+                                    "attribute '%s' not specified") % attr
+                            raise webob.exc.HTTPBadRequest(msg)
                     res_dict[attr] = res_dict.get(attr,
                                                   attr_vals.get('default'))
                 else:
@@ -549,14 +545,14 @@ class Controller(object):
                         msg = _("Attribute '%s' not allowed in POST") % attr
                         raise webob.exc.HTTPBadRequest(msg)
         else:  # PUT
-            for attr, attr_vals in attr_info.iteritems():
+            for attr, attr_vals in iteritems(attr_info):
                 if attr in res_dict and not attr_vals['allow_put']:
                     msg = _("Cannot update read-only attribute %s") % attr
                     raise webob.exc.HTTPBadRequest(msg)
 
-        for attr, attr_vals in attr_info.iteritems():
+        for attr, attr_vals in iteritems(attr_info):
             if (attr not in res_dict or
-                res_dict[attr] is attributes.ATTR_NOT_SPECIFIED):
+                    res_dict[attr] is attributes.ATTR_NOT_SPECIFIED):
                 continue
             # Convert values if necessary
             if 'convert_to' in attr_vals:

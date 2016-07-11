@@ -1,5 +1,3 @@
-# vim: tabstop=4 shiftwidth=4 softtabstop=4
-
 # Copyright 2013 VMware, Inc
 # All Rights Reserved.
 #
@@ -19,6 +17,7 @@
 Unit tests for extension extended attribute
 """
 
+from six import iteritems
 import webob.exc as webexc
 
 import tacker
@@ -60,7 +59,7 @@ class ExtensionExtendedAttributeTestCase(base.BaseTestCase):
         self._tenant_id = "8c70909f-b081-452d-872b-df48e6c355d1"
         # Save the global RESOURCE_ATTRIBUTE_MAP
         self.saved_attr_map = {}
-        for resource, attrs in attributes.RESOURCE_ATTRIBUTE_MAP.iteritems():
+        for resource, attrs in iteritems(attributes.RESOURCE_ATTRIBUTE_MAP):
             self.saved_attr_map[resource] = attrs.copy()
         # Add the resources to the global attribute map
         # This is done here as the setup process won't

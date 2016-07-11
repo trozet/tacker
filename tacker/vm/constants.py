@@ -1,8 +1,4 @@
-# vim: tabstop=4 shiftwidth=4 softtabstop=4
-#
 # Copyright 2013, 2014 Intel Corporation.
-# Copyright 2013, 2014 Isaku Yamahata <isaku.yamahata at intel com>
-#                                     <isaku.yamahata at gmail com>
 # All Rights Reserved.
 #
 #
@@ -17,15 +13,13 @@
 #    WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 #    License for the specific language governing permissions and limitations
 #    under the License.
-#
-# @author: Isaku Yamahata, Intel Corporation.
 
 # sevice type
 SVC_TYPE_ROUTER = 'router'
 SVC_TYPE_LOADBALANCER = 'loadbalancer'
 
 # attribute key for service to spin up device
-## for nova driver. novaclient library uses those
+# for nova driver. novaclient library uses those
 ATTR_KEY_IMAGE = 'image'
 ATTR_KEY_FLAVOR = 'flavor'
 ATTR_KEY_MGMT_NETWORK = 'mgmt-network'

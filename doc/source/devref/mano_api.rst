@@ -1,11 +1,13 @@
-************************
-Tacker MANO API Overview
-************************
+*******************
+Tacker API Overview
+*******************
 
-Tacker MANO API introduces new REST API end-points based on ETSI NFV MANO
-standards [1]. The two new resources introduced are 'vnfd' and 'vnf' for
+Tacker API provides REST API end-points based on `ETSI NFV MANO standards`_.
+The two new resources introduced are 'vnfd' and 'vnf' for
 describing the 'vnfm' extension. The resources request and response formats are
 described in below sections.
+
+.. _ETSI NFV MANO standards: http://www.etsi.org/deliver/etsi_gs/NFV-MAN/001_099/001/01.01.01_60/gs_nfv-man001v010101p.pdf
 
 API versions
 ============
@@ -14,7 +16,7 @@ Lists information for Tacker API version.
 
 **GET /**
 
-List API versions - Lists information about all Networking API versions.
+List API versions - Lists information about Tacker API version.
 
 ::
 
@@ -27,7 +29,7 @@ List API versions - Lists information about all Networking API versions.
                  "id": "v1.0",
                  "links": [
                      {
-                         "href": "http://10.18.160.13:8888/v1.0",
+                         "href": "http://10.18.160.13:9890/v1.0",
                          "rel": "self"
                      }
                  ]

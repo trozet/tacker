@@ -13,20 +13,20 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
-import urllib
-
 from oslo_config import cfg
+from oslo_log import log as logging
+from six import iteritems
+from six.moves.urllib import parse as urllib_parse
 from webob import exc
 
 from tacker.common import constants
 from tacker.common import exceptions
-from tacker.openstack.common import log as logging
 
 
 LOG = logging.getLogger(__name__)
 
 
-def get_filters(request, attr_info, skips=[]):
+def get_filters(request, attr_info, skips=None):
     """Extracts the filters from the request string.
 
     Returns a dict of lists for the filters:
@@ -35,7 +35,8 @@ def get_filters(request, attr_info, skips=[]):
     {'check': [u'a', u'b'], 'name': [u'Bob']}
     """
     res = {}
-    for key, values in request.GET.dict_of_lists().iteritems():
+    skips = skips or []
+    for key, values in iteritems(request.GET.dict_of_lists()):
         if key in skips:
             continue
         values = [v for v in values if v]
@@ -57,7 +58,7 @@ def get_previous_link(request, items, id_key):
         marker = items[0][id_key]
         params['marker'] = marker
     params['page_reverse'] = True
-    return "%s?%s" % (request.path_url, urllib.urlencode(params))
+    return "%s?%s" % (request.path_url, urllib_parse.urlencode(params))
 
 
 def get_next_link(request, items, id_key):
@@ -67,7 +68,7 @@ def get_next_link(request, items, id_key):
         marker = items[-1][id_key]
         params['marker'] = marker
     params.pop('page_reverse', None)
-    return "%s?%s" % (request.path_url, urllib.urlencode(params))
+    return "%s?%s" % (request.path_url, urllib_parse.urlencode(params))
 
 
 def get_limit_and_marker(request):
@@ -92,15 +93,15 @@ def get_limit_and_marker(request):
 def _get_pagination_max_limit():
     max_limit = -1
     if (cfg.CONF.pagination_max_limit.lower() !=
-        constants.PAGINATION_INFINITE):
+            constants.PAGINATION_INFINITE):
         try:
             max_limit = int(cfg.CONF.pagination_max_limit)
             if max_limit == 0:
                 raise ValueError()
         except ValueError:
-            LOG.warn(_("Invalid value for pagination_max_limit: %s. It "
-                       "should be an integer greater to 0"),
-                     cfg.CONF.pagination_max_limit)
+            LOG.warning(_("Invalid value for pagination_max_limit: %s. It "
+                          "should be an integer greater to 0"),
+                        cfg.CONF.pagination_max_limit)
     return max_limit
 
 
@@ -280,6 +281,7 @@ class SortingEmulatedHelper(SortingHelper):
 class SortingNativeHelper(SortingHelper):
 
     def __init__(self, request, attr_info):
+        super(SortingNativeHelper, self).__init__(request, attr_info)
         self.sort_dict = get_sorts(request, attr_info)
 
     def update_args(self, args):

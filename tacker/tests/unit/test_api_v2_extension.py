@@ -1,6 +1,4 @@
 # Copyright 2014 Intel Corporation.
-# Copyright 2014 Isaku Yamahata <isaku.yamahata at intel com>
-#                               <isaku.yamahata at gmail com>
 # All Rights Reserved.
 #
 #
@@ -15,8 +13,6 @@
 #    WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 #    License for the specific language governing permissions and limitations
 #    under the License.
-#
-# @author: Isaku Yamahata, Intel Corporation.
 
 import uuid
 
@@ -59,7 +55,7 @@ class ExtensionTestCase(testlib_api.WebTestCase):
         # Create the default configurations
         self.config_parse()
 
-        #just stubbing core plugin with plugin
+        # just stubbing core plugin with plugin
         self.setup_coreplugin(plugin)
         cfg.CONF.set_override('core_plugin', plugin)
         if service_type:

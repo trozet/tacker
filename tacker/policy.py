@@ -1,5 +1,3 @@
-# vim: tabstop=4 shiftwidth=4 softtabstop=4
-
 # Copyright (c) 2012 OpenStack Foundation.
 # All Rights Reserved.
 #
@@ -22,13 +20,14 @@ import itertools
 import re
 
 from oslo_config import cfg
+from oslo_log import log as logging
+from oslo_utils import excutils
+from oslo_utils import importutils
+import six
 
 from tacker.api.v1 import attributes
 from tacker.common import exceptions
 import tacker.common.utils as utils
-from tacker.openstack.common import excutils
-from tacker.openstack.common import importutils
-from tacker.openstack.common import log as logging
 from tacker.openstack.common import policy
 
 
@@ -92,8 +91,8 @@ def _set_rules(data):
     for pol in policies.keys():
         if any([pol.startswith(depr_pol) for depr_pol in
                 DEPRECATED_POLICY_MAP.keys()]):
-            LOG.warn(_("Found deprecated policy rule:%s. Please consider "
-                       "upgrading your policy configuration file"), pol)
+            LOG.warning(_("Found deprecated policy rule:%s. Please consider "
+                          "upgrading your policy configuration file"), pol)
             pol_name, action = pol.rsplit(':', 1)
             try:
                 new_actions = DEPRECATED_ACTION_MAP[action]
@@ -134,8 +133,8 @@ def _build_subattr_match_rule(attr_name, attr, action, target):
     validate = attr['validate']
     key = filter(lambda k: k.startswith('type:dict'), validate.keys())
     if not key:
-        LOG.warn(_("Unable to find data type descriptor for attribute %s"),
-                 attr_name)
+        LOG.warning(_("Unable to find data type descriptor for attribute %s"),
+                    attr_name)
         return
     data = validate[key[0]]
     if not isinstance(data, dict):
@@ -182,7 +181,7 @@ def _build_match_rule(action, target):
                         validate = attribute.get('validate')
                         if (validate and any([k.startswith('type:dict') and v
                                               for (k, v) in
-                                              validate.iteritems()])):
+                                              six.iteritems(validate)])):
                             attr_rule = policy.AndCheck(
                                 [attr_rule, _build_subattr_match_rule(
                                     attribute_name, attribute,
@@ -280,7 +279,7 @@ class OwnerCheck(policy.Check):
                     LOG.exception(_('Policy check error while calling %s!'), f)
         match = self.match % target
         if self.kind in creds:
-            return match == unicode(creds[self.kind])
+            return match == six.text_type(creds[self.kind])
         return False
 
 
@@ -395,7 +394,9 @@ def _extract_roles(rule, roles):
 
 
 def get_admin_roles():
-    """Return a list of roles which are granted admin rights according
+    """Get Admin roles.
+
+    Return a list of roles which are granted admin rights according
     to policy settings.
     """
     # NOTE(salvatore-orlando): This function provides a solution for

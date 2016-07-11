@@ -1,0 +1,77 @@
+node_types:
+  tosca.nodes.nfv.VDU.Tacker:
+    derived_from: tosca.nodes.nfv.VDU
+    capabilities:
+      nfv_compute:
+        type: tosca.datatypes.compute_properties
+    properties:
+      image:
+#        type: tosca.artifacts.Deployment.Image.VM
+        type: string
+        required: false
+      flavor:
+        type: string
+        required: false
+      availability_zone:
+        type: string
+        required: false
+      metadata:
+        type: map
+        entry_schema:
+          type: string
+        required: false
+      config_drive:
+        type: boolean
+        default: false
+        required: false
+
+      placement_policy:
+#        type: tosca.policies.tacker.Placement
+        type: string
+        required: false
+
+      monitoring_policy:
+#        type: tosca.policies.tacker.Monitoring
+#        type: tosca.datatypes.tacker.MonitoringType
+        type: map
+        required: false
+
+      config:
+        type: string
+        required: false
+
+      mgmt_driver:
+        type: string
+        default: noop
+        required: false
+
+      service_type:
+        type: string
+        required: false
+
+      user_data:
+        type: string
+        required: false
+
+      user_data_format:
+        type: string
+        required: false
+
+      key_name:
+        type: string
+        required: false
+
+  tosca.nodes.nfv.CP.Tacker:
+    derived_from: tosca.nodes.nfv.CP
+    properties:
+      management:
+        type: boolean
+        required: false
+      anti_spoofing_protection:
+        type: boolean
+        required: false
+      type:
+        type: string
+        required: false
+        constraints:
+          - valid_values: [ sriov, vnic ]

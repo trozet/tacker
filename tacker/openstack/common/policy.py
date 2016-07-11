@@ -1,5 +1,3 @@
-# vim: tabstop=4 shiftwidth=4 softtabstop=4
-
 # Copyright (c) 2012 OpenStack Foundation.
 # All Rights Reserved.
 #
@@ -58,14 +56,14 @@ as it allows particular rules to be explicitly disabled.
 
 import abc
 import re
-import urllib
 
+from oslo_log import log as logging
+from oslo_serialization import jsonutils
 import six
-import urllib2
+from six.moves.urllib import parse as urllib_parse
+from six.moves.urllib import request as urlrequest
 
 from tacker.openstack.common.gettextutils import _
-from tacker.openstack.common import jsonutils
-from tacker.openstack.common import log as logging
 
 
 LOG = logging.getLogger(__name__)
@@ -392,7 +390,7 @@ def _parse_check(rule):
     try:
         kind, match = rule.split(':', 1)
     except Exception:
-        LOG.exception(_("Failed to understand rule %(rule)s") % locals())
+        LOG.exception(_("Failed to understand rule %(rule)s"), locals())
         # If the rule is invalid, we'll fail closed
         return FalseCheck()
 
@@ -402,7 +400,7 @@ def _parse_check(rule):
     elif None in _checks:
         return _checks[None](kind, match)
     else:
-        LOG.error(_("No handler for matches of kind %s") % kind)
+        LOG.error(_("No handler for matches of kind %s"), kind)
         return FalseCheck()
 
 
@@ -677,7 +675,7 @@ def _parse_text_rule(rule):
         return state.result
     except ValueError:
         # Couldn't parse the rule
-        LOG.exception(_("Failed to understand rule %(rule)r") % locals())
+        LOG.exception(_("Failed to understand rule %(rule)r"), locals())
 
         # Fail closed
         return FalseCheck()
@@ -756,8 +754,8 @@ class HttpCheck(Check):
         url = ('http:' + self.match) % target
         data = {'target': jsonutils.dumps(target),
                 'credentials': jsonutils.dumps(creds)}
-        post_data = urllib.urlencode(data)
-        f = urllib2.urlopen(url, post_data)
+        post_data = urllib_parse.urlencode(data)
+        f = urlrequest.urlopen(url, post_data)
         return f.read() == "True"
 
 

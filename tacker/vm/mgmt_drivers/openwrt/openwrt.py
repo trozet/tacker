@@ -1,6 +1,4 @@
 # Copyright 2015 Intel Corporation.
-# Copyright 2015 Isaku Yamahata <isaku.yamahata at intel com>
-#                               <isaku.yamahata at gmail com>
 # All Rights Reserved.
 #
 #
@@ -15,17 +13,15 @@
 #    WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 #    License for the specific language governing permissions and limitations
 #    under the License.
-#
-# @author: Isaku Yamahata, Intel Corporation.
-
-import yaml
 
 from oslo_config import cfg
+from oslo_log import log as logging
+from oslo_serialization import jsonutils
+import yaml
 
-from tacker.agent.linux import utils
+from tacker.common import cmd_executer
+from tacker.common.exceptions import MgmtDriverException
 from tacker.common import log
-from tacker.openstack.common import jsonutils
-from tacker.openstack.common import log as logging
 from tacker.vm.mgmt_drivers import abstract_driver
 from tacker.vm.mgmt_drivers import constants as mgmt_constants
 
@@ -56,21 +52,24 @@ class DeviceMgmtOpenWRT(abstract_driver.DeviceMGMTAbstractDriver):
     def _config_service(self, mgmt_ip_address, service, config):
         user = cfg.CONF.openwrt.user
         password = cfg.CONF.openwrt.password
-        cmd = ["sshpass", "-p", "%s" % password,
-               "ssh", "-o", "StrictHostKeyChecking=no",
-               "%s@%s" % (user, mgmt_ip_address),
-               "uci import %s; /etc/init.d/%s restart" % (service, service)]
-        utils.execute(cmd, process_input=config)
+        try:
+            cmd = "uci import %s; /etc/init.d/%s restart" % (service, service)
+            LOG.debug(_('execute command: %s'), (cmd))
+            commander = cmd_executer.RemoteCommandExecutor(user,
+                                                       password,
+                                                       mgmt_ip_address)
+            commander.execute_command(cmd, input_data=config)
+        except Exception as ex:
+            LOG.error(_("While executing command on remote: %s"), ex)
+            raise MgmtDriverException()
 
     @log.log
     def mgmt_call(self, plugin, context, device, kwargs):
         if (kwargs[mgmt_constants.KEY_ACTION] !=
-            mgmt_constants.ACTION_UPDATE_DEVICE):
+                mgmt_constants.ACTION_UPDATE_DEVICE):
             return
         dev_attrs = device.get('attributes', {})
-        service_type = dev_attrs.get('service_type')
-        if not service_type:
-            return
+
         mgmt_url = jsonutils.loads(device.get('mgmt_url', '{}'))
         if not mgmt_url:
             return
@@ -88,18 +87,8 @@ class DeviceMgmtOpenWRT(abstract_driver.DeviceMGMTAbstractDriver):
                     continue
                 mgmt_ip_address = mgmt_url.get(vdu, '')
                 if not mgmt_ip_address:
-                    LOG.warn(_('tried to configure unknown mgmt address %s'),
-                             vdu)
+                    LOG.warning(_('tried to configure unknown mgmt '
+                                  'address %s'),
+                                vdu)
                     continue
                 self._config_service(mgmt_ip_address, key, conf_value)
-
-    def mgmt_service_address(self, plugin, context,
-                             device, service_instance):
-        LOG.debug(_('mgmt_service_address %(device)s %(service_instance)s'),
-                  {'device': device, 'service_instance': service_instance})
-        return 'noop-mgmt-service-address'
-
-    def mgmt_service_call(self, plugin, context, device,
-                          service_instance, kwargs):
-        LOG.debug(_('mgmt_service_call %(device)s %(service_instance)s'),
-                  {'device': device, 'service_instance': service_instance})

@@ -11,7 +11,6 @@
 # ``stack.sh`` calls the entry points in this order:
 #
 # - install_tacker
-# - install_tackerclient
 # - configure_tacker
 # - create_tacker_accounts
 # - init_tacker
@@ -25,7 +24,7 @@
 # - stop_tacker
 # - cleanup_tacker
 
-# Tacker SeviceVM
+# Tacker
 # ---------------
 
 # Save trace setting
@@ -40,11 +39,7 @@ if is_ssl_enabled_service "tacker" || is_service_enabled tls-proxy; then
 fi
 
 # Set up default directories
-GITREPO["python-tackerclient"]=${TACKERCLIENT_REPO:-${GIT_BASE}/stackforge/python-tackerclient.git}
-GITBRANCH["python-tackerclient"]=${TACKERCLIENT_BRANCH:-master}
-GITDIR["python-tackerclient"]=$DEST/python-tackerclient
-
-GITREPO["tacker-horizon"]=${TACKERHORIZON_REPO:-${GIT_BASE}/stackforge/tacker-horizon.git}
+GITREPO["tacker-horizon"]=${TACKERHORIZON_REPO:-${GIT_BASE}/openstack/tacker-horizon.git}
 GITBRANCH["tacker-horizon"]=${TACKERHORZION_BRANCH:-master}
 GITDIR["tacker-horizon"]=$DEST/tacker-horizon
 
@@ -64,9 +59,9 @@ TACKER_CONF=$TACKER_CONF_DIR/tacker.conf
 # Default name for Tacker database
 TACKER_DB_NAME=${TACKER_DB_NAME:-tacker}
 # Default Tacker Port
-TACKER_PORT=${TACKER_PORT:-8888}
+TACKER_PORT=${TACKER_PORT:-9890}
 # Default Tacker Internal Port when using TLS proxy
-TACKER_PORT_INT=${TACKER_PORT_INT:-18888}       # TODO(FIX)
+TACKER_PORT_INT=${TACKER_PORT_INT:-19890}       # TODO(FIX)
 # Default Tacker Host
 TACKER_HOST=${TACKER_HOST:-$SERVICE_HOST}
 # Default protocol
@@ -91,6 +86,8 @@ TACKER_NOVA_API_INSECURE=${TACKER_NOVA_API_INSECURE:-False}
 
 # Tell Tempest this project is present
 # TEMPEST_SERVICES+=,tacker
+
+HEAT_CONF_DIR=/etc/heat
 
 # Functions
 # ---------
@@ -117,18 +114,13 @@ function create_tacker_cache_dir {
 # Migrated from keystone_data.sh
 function create_tacker_accounts {
     if is_service_enabled tacker; then
-        # openstack user create tacker --password service-password
-        # openstack role add admin --user <uuid> --project service
         create_service_user "tacker"
         get_or_create_role "advsvc"
         create_service_user "tacker" "advsvc"
 
         if [[ "$KEYSTONE_CATALOG_BACKEND" = 'sql' ]]; then
-
-            # openstack service create servicevm --name tacker '--description=tacker Service'
             local tacker_service=$(get_or_create_service "tacker" \
-                "servicevm" "Tacker Service")
-            # openstack endpoint create <uuid of service> --region RegionOne --publicurl 'http://143.183.96.146:8888/' --adminurl 'http://143.183.96.146:8888/' --internalurl 'http://143.183.96.146:8888/'
+                "nfv-orchestration" "Tacker NFV Orchestration Service")
             get_or_create_endpoint $tacker_service \
                 "$REGION_NAME" \
                 "$TACKER_PROTOCOL://$SERVICE_HOST:$TACKER_PORT/" \
@@ -143,8 +135,6 @@ function create_tacker_accounts {
 
 # init_tacker() - Initialize databases, etc.
 function init_tacker {
-    # mysql -uroot -pmysql-password -h143.183.96.146 -e 'DROP DATABASE IF EXISTS tacker;'
-    # mysql -uroot -pmysql-password -h143.183.96.146 -e 'CREATE DATABASE tacker CHARACTER SET utf8;'
     recreate_database $TACKER_DB_NAME
 
     # Run Tacker db migrations
@@ -153,16 +143,7 @@ function init_tacker {
 
 # install_tacker() - Collect source and prepare
 function install_tacker {
-    #git_clone $TACKER_REPO $TACKER_DIR $TACKER_BRANCH
     setup_develop $TACKER_DIR
-}
-
-# install_tackerclient() - Collect source and prepare
-function install_tackerclient {
-    if use_library_from_git "python-tackerclient"; then
-        git_clone_by_name "python-tackerclient"
-        setup_dev_lib "python-tackerclient"
-    fi
 }
 
 function start_tacker_api {
@@ -188,24 +169,9 @@ function start_tacker_api {
     fi
 }
 
-# TODO
-# Start running processes, including screen
-function start_tacker_agents {
-    # TODO
-    return
-
-    # Start up the tacker agents if enabled
-    run_process q-agt "python $AGENT_BINARY --config-file $TACKER_CONF"
-
-    if is_service_enabled q-servicevm-agent; then
-        screen_it q-servicevm "cd $TACKER_DIR && python $AGENT_SERVICEVM_BINARY --config-file $TACKER_CONF --config-file $SERVICEVM_CONF_FILENAME"
-    fi
-}
-
 # stop_tacker() - Stop running processes (non-screen)
 function stop_tacker {
-    stop_process tacker-svc
-    # stop_process q-agt
+    stop_process tacker
 }
 
 # cleanup_tacker() - Remove residual data files, anything left over from previous
@@ -267,7 +233,6 @@ function configure_tacker {
     # allow tacker user to administer tacker to match tacker account
     sed -i 's/"context_is_admin":  "role:admin"/"context_is_admin":  "role:admin or user_name:tacker"/g' $TACKER_POLICY_FILE
 
-    iniset $TACKER_CONF DEFAULT verbose True
     iniset $TACKER_CONF DEFAULT debug $ENABLE_DEBUG_LOG_LEVEL
     iniset $TACKER_CONF DEFAULT policy_file $TACKER_POLICY_FILE
 
@@ -284,18 +249,18 @@ function configure_tacker {
     iniset $TACKER_CONF DEFAULT nova_api_insecure $TACKER_NOVA_API_INSECURE
     iniset $TACKER_CONF DEFAULT nova_region_name $REGION_NAME
 
-    iniset $TACKER_CONF servicevm_nova auth_plugin password
-    iniset $TACKER_CONF servicevm_nova auth_url $KEYSTONE_AUTH_URI
-    iniset $TACKER_CONF servicevm_nova username nova
-    iniset $TACKER_CONF servicevm_nova password $SERVICE_PASSWORD
-    iniset $TACKER_CONF servicevm_nova user_domain_id default
-    iniset $TACKER_CONF servicevm_nova project_name $SERVICE_TENANT_NAME
-    iniset $TACKER_CONF servicevm_nova project_domain_id default
-    iniset $TACKER_CONF servicevm_nova region_name $REGION_NAME
+    iniset $TACKER_CONF tacker_nova auth_plugin password
+    iniset $TACKER_CONF tacker_nova auth_url $KEYSTONE_AUTH_URI
+    iniset $TACKER_CONF tacker_nova username nova
+    iniset $TACKER_CONF tacker_nova password $SERVICE_PASSWORD
+    iniset $TACKER_CONF tacker_nova user_domain_id default
+    iniset $TACKER_CONF tacker_nova project_name $SERVICE_TENANT_NAME
+    iniset $TACKER_CONF tacker_nova project_domain_id default
+    iniset $TACKER_CONF tacker_nova region_name $REGION_NAME
 
-    iniset $TACKER_CONF servicevm_heat heat_uri http://$SERVICE_HOST:8004/v1
-    iniset $TACKER_CONF servicevm_heat stack_retries 10
-    iniset $TACKER_CONF servicevm_heat stack_retry_wait 5
+    iniset $TACKER_CONF tacker_heat heat_uri http://$SERVICE_HOST:8004/v1
+    iniset $TACKER_CONF tacker_heat stack_retries 60
+    iniset $TACKER_CONF tacker_heat stack_retry_wait 5
 
     _tacker_setup_rootwrap
     echo "Creating bridge"
@@ -364,6 +329,33 @@ function tacker_horizon_install {
     restart_apache_server
 }
 
+function openstack_image_create_openwrt {
+    image=$1
+    disk_format=raw
+    container_format=bare
+    image_name="OpenWRT"
+    openstack --os-cloud=devstack-admin image create $image_name --public --container-format=$container_format --disk-format $disk_format < <(zcat --force "${image}")
+    glance image-list | grep OpenWRT | awk {print$2}
+}
+
+function tacker_create_openwrt_image {
+    local image_url=https://downloads.openwrt.org/chaos_calmer/15.05/x86/kvm_guest/openwrt-15.05-x86-kvm_guest-combined-ext4.img.gz
+    local image image_fname image_name
+    image_fname=`basename "$image_url"`
+
+    if [[ $image_url != file* ]]; then
+        if [[ ! -f $FILES/$image_fname || "$(stat -c "%s" $FILES/$image_fname)" = "0" ]]; then
+            {
+               wget --progress=dot:giga -c $image_url -O $FILES/$image_fname \
+                   && openstack_image_create_openwrt $FILES/$image_fname
+            }||{
+                rm -rf $FILES/$image_fname
+                echo "WARNING: openwrt image create for $image_fname failed"
+            }
+        fi
+    fi
+}
+
 function tacker_create_initial_network {
     # create necessary networks
     # prepare network
@@ -389,4 +381,24 @@ function tacker_create_initial_network {
     sudo ifconfig ${BR_MGMT} inet ${NETWORK_GATEWAY_MGMT_IP}
 }
 
+function tacker_register_default_vim {
+    local default_vim_id
+    DEFAULT_VIM_PROJECT_NAME="nfv"
+    DEFAULT_VIM_USER="nfv_user"
+    DEFAULT_VIM_PASSWORD="devstack"
+    DEFAULT_VIM_NAME="VIM0"
+    get_or_create_project $DEFAULT_VIM_PROJECT_NAME
+    get_or_create_user $DEFAULT_VIM_USER $DEFAULT_VIM_PASSWORD
+    get_or_add_user_project_role "admin" $DEFAULT_VIM_USER $DEFAULT_VIM_PROJECT_NAME
+    get_or_add_user_project_role "advsvc" $DEFAULT_VIM_USER $DEFAULT_VIM_PROJECT_NAME
+    VIM_CONFIG_FILE="$TACKER_DIR/devstack/vim_config.yaml"
+    default_vim_id=$(tacker vim-register --name $DEFAULT_VIM_NAME --config-file $VIM_CONFIG_FILE -f value -c id)
+    echo $default_vim_id
+    iniset $TACKER_CONF nfvo_vim default_vim $DEFAULT_VIM_NAME
+}
 
+function modify_heat_flavor_policy_rule {
+    local policy_file=$HEAT_CONF_DIR/policy.json
+    # Allow non-admin projects with 'admin' roles to create flavors in Heat
+    sed -i 's/"resource_types:OS::Nova::Flavor": "rule:context_is_admin"/"resource_types:OS::Nova::Flavor": "role:admin"/' $policy_file
+}

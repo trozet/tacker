@@ -1,5 +1,3 @@
-# vim: tabstop=4 shiftwidth=4 softtabstop=4
-
 # Copyright 2011 OpenStack Foundation.
 # All Rights Reserved.
 #
@@ -30,9 +28,15 @@ from xml.etree import ElementTree as etree
 from xml.parsers import expat
 
 import eventlet.wsgi
-#eventlet.patcher.monkey_patch(all=False, socket=True, thread=True)
+# eventlet.patcher.monkey_patch(all=False, socket=True, thread=True)
 from oslo_config import cfg
+from oslo_log import log as logging
+from oslo_serialization import jsonutils
+from oslo_service import service as common_service
+from oslo_service import systemd
+from oslo_utils import excutils
 import routes.middleware
+import six
 import webob.dec
 import webob.exc
 
@@ -40,12 +44,7 @@ from tacker.common import constants
 from tacker.common import exceptions as exception
 from tacker import context
 from tacker.db import api
-from tacker.openstack.common import excutils
 from tacker.openstack.common import gettextutils
-from tacker.openstack.common import jsonutils
-from tacker.openstack.common import log as logging
-from tacker.openstack.common import service as common_service
-from tacker.openstack.common import systemd
 
 socket_opts = [
     cfg.IntOpt('backlog',
@@ -82,8 +81,9 @@ CONF.register_opts(socket_opts)
 LOG = logging.getLogger(__name__)
 
 
-class WorkerService(object):
-    """Wraps a worker to be handled by ProcessLauncher"""
+class WorkerService(common_service.ServiceBase):
+    """Wraps a worker to be handled by ProcessLauncher."""
+
     def __init__(self, service, application):
         self._service = service
         self._application = application
@@ -105,6 +105,9 @@ class WorkerService(object):
         if isinstance(self._server, eventlet.greenthread.GreenThread):
             self._server.kill()
             self._server = None
+
+    def reset(self):
+        pass
 
 
 class Server(object):
@@ -174,7 +177,6 @@ class Server(object):
                                        family=family)
                 if CONF.use_ssl:
                     sock = wrap_ssl(sock)
-
             except socket.error as err:
                 with excutils.save_and_reraise_exception() as ctxt:
                     if err.errno == errno.EADDRINUSE:
@@ -215,7 +217,8 @@ class Server(object):
         else:
             # Minimize the cost of checking for child exit by extending the
             # wait interval past the default of 0.01s.
-            self._launcher = common_service.ProcessLauncher(wait_interval=1.0)
+            self._launcher = common_service.ProcessLauncher(CONF,
+                                                            wait_interval=1.0)
             self._server = WorkerService(self, application)
             self._launcher.launch_service(self._server, workers=workers)
 
@@ -247,7 +250,7 @@ class Server(object):
     def _run(self, application, socket):
         """Start a WSGI server in a new green thread."""
         eventlet.wsgi.server(socket, application, custom_pool=self.pool,
-                             log=logging.WritableLogger(LOG))
+                             log=LOG)
 
 
 class Middleware(object):
@@ -328,13 +331,13 @@ class Request(webob.Request):
             if _format in ['json', 'xml']:
                 return 'application/{0}'.format(_format)
 
-        #Then look up content header
+        # Then look up content header
         type_from_header = self.get_content_type()
         if type_from_header:
             return type_from_header
         ctypes = ['application/json', 'application/xml']
 
-        #Finally search in Accept-* headers
+        # Finally search in Accept-* headers
         bm = self.accept.best_match(ctypes)
         return bm or 'application/json'
 
@@ -394,7 +397,7 @@ class JSONDictSerializer(DictSerializer):
 
     def default(self, data):
         def sanitizer(obj):
-            return unicode(obj)
+            return six.text_type(obj)
         return jsonutils.dumps(data, default=sanitizer)
 
 
@@ -429,7 +432,7 @@ class XMLDictSerializer(DictSerializer):
                 root_key = constants.VIRTUAL_ROOT_KEY
                 root_value = None
             else:
-                link_keys = [k for k in data.iterkeys() or []
+                link_keys = [k for k in data or []
                              if k.endswith('_links')]
                 if link_keys:
                     links = data.pop(link_keys[0], None)
@@ -458,7 +461,7 @@ class XMLDictSerializer(DictSerializer):
         self._add_xmlns(node, used_prefixes, has_atom)
         return etree.tostring(node, encoding='UTF-8')
 
-    #NOTE (ameade): the has_atom should be removed after all of the
+    # NOTE (ameade): the has_atom should be removed after all of the
     # xml serializers and view builders have been updated to the current
     # spec that required all responses include the xmlns:atom, the has_atom
     # flag is to prevent current tests from breaking
@@ -481,7 +484,7 @@ class XMLDictSerializer(DictSerializer):
         result = etree.SubElement(parent, nodename)
         if ":" in nodename:
             used_prefixes.append(nodename.split(":", 1)[0])
-        #TODO(bcwaldon): accomplish this without a type-check
+        # TODO(bcwaldon): accomplish this without a type-check
         if isinstance(data, list):
             if not data:
                 result.set(
@@ -497,7 +500,7 @@ class XMLDictSerializer(DictSerializer):
             for item in data:
                 self._to_xml_node(result, metadata, singular, item,
                                   used_prefixes)
-        #TODO(bcwaldon): accomplish this without a type-check
+        # TODO(bcwaldon): accomplish this without a type-check
         elif isinstance(data, dict):
             if not data:
                 result.set(
@@ -534,9 +537,9 @@ class XMLDictSerializer(DictSerializer):
                       {'data': data,
                        'type': type(data)})
             if isinstance(data, str):
-                result.text = unicode(data, 'utf-8')
+                result.text = six.text_type(data, encoding='utf-8')
             else:
-                result.text = unicode(data)
+                result.text = six.text_type(data)
         return result
 
     def _create_link_nodes(self, xml_doc, links):
@@ -704,7 +707,7 @@ class XMLDeserializer(TextDeserializer):
                 parseError = False
                 # Python2.7
                 if (hasattr(etree, 'ParseError') and
-                    isinstance(e, getattr(etree, 'ParseError'))):
+                        isinstance(e, getattr(etree, 'ParseError'))):
                     parseError = True
                 # Python2.6
                 elif isinstance(e, expat.ExpatError):
@@ -751,9 +754,9 @@ class XMLDeserializer(TextDeserializer):
             result = dict()
             for attr in node.keys():
                 if (attr == 'xmlns' or
-                    attr.startswith('xmlns:') or
-                    attr == constants.XSI_ATTR or
-                    attr == constants.TYPE_ATTR):
+                        attr.startswith('xmlns:') or
+                        attr == constants.XSI_ATTR or
+                        attr == constants.TYPE_ATTR):
                     continue
                 result[self._get_key(attr)] = node.get(attr)
             children = list(node)
@@ -949,7 +952,7 @@ class Debug(Middleware):
         resp = req.get_response(self.application)
 
         print(("*" * 40) + " RESPONSE HEADERS")
-        for (key, value) in resp.headers.iteritems():
+        for (key, value) in six.iteritems(resp.headers):
             print(key, "=", value)
         print()
 
@@ -1089,7 +1092,7 @@ class Resource(Application):
         try:
             action_result = self.dispatch(request, action, args)
         except webob.exc.HTTPException as ex:
-            LOG.info(_("HTTP exception thrown: %s"), unicode(ex))
+            LOG.info(_("HTTP exception thrown: %s"), six.text_type(ex))
             action_result = Fault(ex,
                                   self._xmlns,
                                   self._fault_body_function)
@@ -1123,7 +1126,7 @@ class Resource(Application):
 
         controller_method = getattr(self.controller, action)
         try:
-            #NOTE(salvatore-orlando): the controller method must have
+            # NOTE(salvatore-orlando): the controller method must have
             # an argument whose name is 'request'
             return controller_method(request=request, **action_args)
         except TypeError as exc:

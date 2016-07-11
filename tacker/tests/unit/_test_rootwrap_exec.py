@@ -1,5 +1,3 @@
-# vim: tabstop=4 shiftwidth=4 softtabstop=4
-
 # Copyright (c) 2012 OpenStack Foundation
 # All Rights Reserved.
 #
@@ -18,9 +16,9 @@
 import os
 
 import fixtures
+from oslo_log import log as logging
 
 from tacker.agent.linux import utils
-from tacker.openstack.common import log as logging
 from tacker.tests import base
 
 

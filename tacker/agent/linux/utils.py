@@ -1,5 +1,3 @@
-# vim: tabstop=4 shiftwidth=4 softtabstop=4
-
 # Copyright 2012 Locaweb.
 # All Rights Reserved.
 #
@@ -14,8 +12,6 @@
 #    WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 #    License for the specific language governing permissions and limitations
 #    under the License.
-#
-# @author: Juliano Martinez, Locaweb.
 
 import fcntl
 import os
@@ -26,10 +22,10 @@ import tempfile
 
 from eventlet.green import subprocess
 from eventlet import greenthread
+from oslo_log import log as logging
+from oslo_utils import excutils
 
 from tacker.common import utils
-from tacker.openstack.common import excutils
-from tacker.openstack.common import log as logging
 
 
 LOG = logging.getLogger(__name__)

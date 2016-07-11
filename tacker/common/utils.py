@@ -27,20 +27,48 @@ import os
 import random
 import signal
 import socket
+import sys
 import uuid
 
 from eventlet.green import subprocess
+import netaddr
+from oslo_concurrency import lockutils
 from oslo_config import cfg
+from oslo_log import log as logging
+from oslo_utils import importutils
+from six import iteritems
+from stevedore import driver
 
 from tacker.common import constants as q_const
-from tacker.openstack.common import lockutils
-from tacker.openstack.common import log as logging
+from tacker.i18n import _LE
 
 
 TIME_FORMAT = "%Y-%m-%dT%H:%M:%SZ"
 LOG = logging.getLogger(__name__)
 SYNCHRONIZED_PREFIX = 'tacker-'
-
+MEM_UNITS = {
+    "MB": {
+        "MB": {
+            "op": "*",
+            "val": "1"
+        },
+        "GB": {
+            "op": "/",
+            "val": "1024"
+        }
+    },
+    "GB": {
+        "MB": {
+            "op": "*",
+            "val": "1024"
+        },
+        "GB": {
+            "op": "*",
+            "val": "1"
+        }
+    }
+}
+CONF = cfg.CONF
 synchronized = lockutils.synchronized_with_prefix(SYNCHRONIZED_PREFIX)
 
 
@@ -184,7 +212,7 @@ def subprocess_popen(args, stdin=None, stdout=None, stderr=None, shell=False,
 
 
 def parse_mappings(mapping_list, unique_values=True):
-    """Parse a list of of mapping strings into a dictionary.
+    """Parse a list of mapping strings into a dictionary.
 
     :param mapping_list: a list of strings of the form '<key>:<value>'
     :param unique_values: values must be unique if True
@@ -224,16 +252,14 @@ def compare_elements(a, b):
 
     This method doesn't consider ordering
     """
-    if a is None:
-        a = []
-    if b is None:
-        b = []
+    a = a or []
+    b = b or []
     return set(a) == set(b)
 
 
 def dict2str(dic):
     return ','.join("%s=%s" % (key, val)
-                    for key, val in sorted(dic.iteritems()))
+                    for key, val in sorted(iteritems(dic)))
 
 
 def str2dict(string):
@@ -299,3 +325,69 @@ def cpu_count():
         return multiprocessing.cpu_count()
     except NotImplementedError:
         return 1
+
+
+def is_valid_ipv4(address):
+    """Verify that address represents a valid IPv4 address."""
+    try:
+        return netaddr.valid_ipv4(address)
+    except Exception:
+        return False
+
+
+def change_memory_unit(mem, to):
+    """Changes the memory value(mem) based on the unit('to') specified.
+
+    If the unit is not specified in 'mem', by default, it is considered
+    as "MB". And this method returns only integer.
+    """
+
+    mem = str(mem) + " MB" if str(mem).isdigit() else mem.upper()
+    for unit, value in iteritems(MEM_UNITS):
+        mem_arr = mem.split(unit)
+        if len(mem_arr) < 2:
+            continue
+        return eval(mem_arr[0] +
+                    MEM_UNITS[unit][to]["op"] +
+                    MEM_UNITS[unit][to]["val"])
+
+
+def load_class_by_alias_or_classname(namespace, name):
+    """Load class using stevedore alias or the class name
+
+    Load class using the stevedore driver manager
+    :param namespace: namespace where the alias is defined
+    :param name: alias or class name of the class to be loaded
+    :returns class if calls can be loaded
+    :raises ImportError if class cannot be loaded
+    """
+
+    if not name:
+        LOG.error(_LE("Alias or class name is not set"))
+        raise ImportError(_("Class not found."))
+    try:
+        # Try to resolve class by alias
+        mgr = driver.DriverManager(namespace, name)
+        class_to_load = mgr.driver
+    except RuntimeError:
+        e1_info = sys.exc_info()
+        # Fallback to class name
+        try:
+            class_to_load = importutils.import_class(name)
+        except (ImportError, ValueError):
+            LOG.error(_LE("Error loading class by alias"),
+                      exc_info=e1_info)
+            LOG.error(_LE("Error loading class by class name"),
+                      exc_info=True)
+            raise ImportError(_("Class not found."))
+    return class_to_load
+
+
+def deep_update(orig_dict, new_dict):
+    for key, value in new_dict.items():
+        if isinstance(value, dict):
+            if key in orig_dict and isinstance(orig_dict[key], dict):
+                deep_update(orig_dict[key], value)
+                continue
+
+        orig_dict[key] = value

@@ -9,7 +9,7 @@ Request for Enhancement (RFE) Process
 =====================================
 
 The developer, or an operator, can write up the requested enhancement in a
-Tacker launchpad [1] bug.
+Tacker launchpad [#]_ bug.
 
 * The requester need to mark the bug with "RFE" tag.
 * The bug will be in the initial "New" state.
@@ -17,7 +17,7 @@ Tacker launchpad [1] bug.
   launchpad bug.
 * Once the discussion is over a tacker-core team member will acknowledge the
   validity of this feature enhancement by moving it to the "Confirmed" state.
-* Developer will submit patchsets to implement the enhacement using the bug-id.
+* Developer will submit patchsets to implement the enhancement using the bug-id.
   Note, if there are multiple patchsets Partial-Bug header should be used
   instead of Closes-Bug in the commit message.
 * Once all the patchsets are merged the bug will be moved to the "Completed"
@@ -32,11 +32,11 @@ Blueprint and Tacker-Specs process
 ==================================
 
 The developer, or an operator, can write up the requested enhancement by
-submitting a patchset to the tacker-spec repository [2].
+submitting a patchset to the tacker-spec repository [#]_.
 
-* The patchset should follow the template specified in [3]
+* The patchset should follow the template specified in [#]_
 * The requester should also create a corresponding blueprint for the
-  enhancement proposal in launchpad [4]
+  enhancement proposal in launchpad [#]_
 * The requester and the team will have a discussion on the tacker-spec
   writeup using gerrit.
 * The patchset will be merged into the tackers-specs repository if the
@@ -57,7 +57,7 @@ significant code-changes (LOC), community discussions and debates.
 References
 ==========
 
-[1] https://bugs.launchpad.net/tacker
-[2] https://github.com/stackforge/tacker-specs
-[3] https://github.com/stackforge/tacker-specs/blob/master/specs/template.rst
-[4] https://blueprints.launchpad.net/tacker/
+.. [#] https://bugs.launchpad.net/tacker
+.. [#] https://github.com/openstack/tacker-specs
+.. [#] https://github.com/openstack/tacker-specs/blob/master/specs/template.rst
+.. [#] https://blueprints.launchpad.net/tacker/

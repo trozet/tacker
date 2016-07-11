@@ -1,8 +1,4 @@
-# vim: tabstop=4 shiftwidth=4 softtabstop=4
-#
 # Copyright 2013, 2014 Intel Corporation.
-# Copyright 2013, 2014 Isaku Yamahata <isaku.yamahata at intel com>
-#                                     <isaku.yamahata at gmail com>
 # All Rights Reserved.
 #
 #
@@ -18,13 +14,12 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 #
-# @author: Isaku Yamahata, Intel Corporation.
 
-import logging as log
+from oslo_log import log as logging
 
 import stevedore.named
 
-LOG = log.getLogger(__name__)
+LOG = logging.getLogger(__name__)
 
 
 class DriverManager(object):
