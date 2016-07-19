@@ -158,6 +158,7 @@ class NetVirtSFC():
     def _build_acl_json(self, sfcc_dict, rsp_id):
         sfcc_json = {'acl': [
                      {'acl-name': sfcc_dict['name'],
+                      'acl-type': 'ietf-access-control-list:ipv4-acl',
                       'access-list-entries': dict(),
                       }]}
 
