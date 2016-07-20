@@ -80,7 +80,7 @@ class NetVirtSFC():
             LOG.warn(_('Unable to find opendaylight config in conf file'
                        'but netvirtsfc driver is loaded...'))
         self.sff_counter = 1
-        self.config_acl_url = 'restconf/config/ietf-access-control-list:access-lists/acl/{}'
+        self.config_acl_url = 'restconf/config/ietf-access-control-list:access-lists/acl/ietf-access-control-list:ipv4-acl/{}'
         self.config_netvirtsfc_url = 'restconf/config/netvirt-sfc-classifier:classifiers/classifier/{}'
         # translates abstract match criteria to ODL netvirt specific
         self.match_translation = {'source_ip_prefix': 'source-ipv4-network',
