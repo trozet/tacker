@@ -36,7 +36,7 @@ from tacker.openstack.common import log as logging
 from tacker.vm.drivers import abstract_driver
 from tacker.common import exceptions
 
-
+_VALID_RESP_CODES = (200, 201)
 LOG = logging.getLogger(__name__)
 CONF = cfg.CONF
 
@@ -102,7 +102,6 @@ class DeviceOpenDaylight():
         else:
             LOG.warn(_('Unable to find opendaylight config in conf file'
                        'but opendaylight driver is loaded...'))
-        self.sff_counter = 1
         self.config_sf_url = 'restconf/config/service-function:service-functions/service-function/{}/'
         self.config_sff_url = 'restconf/config/service-function-forwarder:service-function-forwarders/' \
                               'service-function-forwarder/{}/'
@@ -282,7 +281,7 @@ class DeviceOpenDaylight():
             service_function_json['service-function'].append(y)
             LOG.debug(_('json request formatted sf json:%s'), json.dumps(service_function_json))
             sf_result = self.create_odl_sfs(sfs_json=service_function_json)
-            if sf_result.status_code != 200:
+            if sf_result.status_code not in _VALID_RESP_CODES:
                 LOG.exception(_('Unable to create ODL SF %s'), service_function_json)
                 raise ODLSFCreateFailed
 
@@ -302,7 +301,7 @@ class DeviceOpenDaylight():
             LOG.debug(_('json request formatted sff json:%s'), json.dumps(sff_json))
             sff_result = self.create_odl_sff(sff_json=sff_json)
 
-            if sff_result.status_code != 200:
+            if sff_result.status_code not in _VALID_RESP_CODES:
                 LOG.exception(_('Unable to create SFFs'))
                 raise ODLSFFCreateFailed
 
@@ -310,7 +309,7 @@ class DeviceOpenDaylight():
         sfc_json = self.create_sfc_json(sfc_dict, vnf_dict)
         sfc_result = self.create_odl_sfc(sfc_json=sfc_json)
 
-        if sfc_result.status_code != 200:
+        if sfc_result.status_code not in _VALID_RESP_CODES:
             LOG.exception(_('Unable to create ODL SFC'))
             raise ODLSFCCreateFailed
 
@@ -320,7 +319,7 @@ class DeviceOpenDaylight():
         sfp_json = self.create_sfp_json(sfc_dict)
         sfp_result = self.create_odl_sfp(sfp_json=sfp_json)
 
-        if sfp_result.status_code != 200:
+        if sfp_result.status_code not in _VALID_RESP_CODES:
             LOG.exception(_('Unable to create ODL SFP'))
             raise ODLSFPCreateFailed
 
@@ -330,7 +329,7 @@ class DeviceOpenDaylight():
         rsp_json = self.create_rsp_json(sfp_json)
         rsp_result = self.create_odl_rsp(rsp_json=rsp_json)
 
-        if rsp_result.status_code != 200:
+        if rsp_result.status_code not in _VALID_RESP_CODES:
             LOG.exception(_('Unable to create ODL RSP'))
             raise ODLRSPCreateFailed
 
@@ -413,7 +412,6 @@ class DeviceOpenDaylight():
 
         network_map = network['network-topology']['topology']
         # look to see if vm_id exists in network dict
-        # FIXME there is a bug here with multiple OVS instances + same bridge name
         for sf in sfs_dict:
             br_dict = self.find_ovs_br(sfs_dict[sf], network_map)
             LOG.debug(_('br_dict from find_ovs %s'), br_dict)
@@ -437,8 +435,8 @@ class DeviceOpenDaylight():
                         br_mapping[br_id]['sff_name'] = prev_sff_dict[br_id]['name']
                     else:
                         # Must be a new SFF
-                        br_mapping[br_id]['sff_name'] = 'sff' + str(self.sff_counter)
-                        self.sff_counter += 1
+                        br_mapping[br_id]['sff_name'] = 'sff-' + str(
+                            br_mapping[br_id]['ovs_ip'])
             else:
                 LOG.debug(_('Could not find OVS bridge for %s'), sf)
 
