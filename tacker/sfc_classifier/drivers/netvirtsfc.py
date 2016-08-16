@@ -34,6 +34,7 @@ from tacker.openstack.common import log as logging
 from tacker.vm.drivers import abstract_driver
 from tacker.common import exceptions
 
+_VALID_RESP_CODES = (200, 201)
 LOG = logging.getLogger(__name__)
 CONF = cfg.CONF
 
@@ -126,14 +127,14 @@ class NetVirtSFC():
         sfcc_name = sfcc_dict['name']
         acl_result = self.send_rest(acl_json, 'put', self.config_acl_url.format(sfcc_name))
 
-        if acl_result.status_code != 200:
+        if acl_result.status_code not in _VALID_RESP_CODES:
             LOG.exception(_('Unable to create NetVirt ACL'))
             raise NetVirtClassifierACLCreateFailed
 
         sfcc_json = self._build_classifier_json(sfcc_name)
         sfcc_result = self.send_rest(sfcc_json, 'put', self.config_netvirtsfc_url.format(sfcc_name))
 
-        if sfcc_result.status_code != 200:
+        if sfcc_result.status_code not in _VALID_RESP_CODES:
             LOG.exception(_('Unable to create NetVirt Classifier'))
             raise NetVirtClassifierCreateFailed
 
