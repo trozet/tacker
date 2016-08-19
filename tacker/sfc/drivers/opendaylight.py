@@ -489,7 +489,8 @@ class DeviceOpenDaylight():
                     "nshc1": "flow",
                     "nshc2": "flow",
                     "nshc3": "flow",
-                    "nshc4": "flow"}
+                    "nshc4": "flow",
+                    "exts": "gpe"}
         sff_dp_loc = {'name': '',
                       'data-plane-locator':
                           {
