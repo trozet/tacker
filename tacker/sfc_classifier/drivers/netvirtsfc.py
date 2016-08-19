@@ -171,7 +171,7 @@ class NetVirtSFC():
 
         match_dict = dict()
         for key, value in sfcc_dict['acl_match_criteria'].iteritems():
-            if value:
+            if value is not None:
                 if key in self.match_translation:
                     new_key = self.match_translation[key]
                     if isinstance(new_key, dict):

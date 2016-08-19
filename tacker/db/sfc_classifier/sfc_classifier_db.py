@@ -242,7 +242,8 @@ class SFCCPluginDb(sfc_classifier.SFCCPluginBase, db_base.CommonDbMixin):
     def _make_acl_match_dict(self, acl_match_db):
         key_list = ('source_mac', 'dest_mac', 'ethertype', 'source_ip_prefix',
                     'dest_ip_prefix', 'source_port', 'dest_port', 'protocol')
-        return {key: entry[key] for key in key_list for entry in acl_match_db if entry[key]}
+        return {key: entry[key] for key in key_list for entry in
+                acl_match_db if entry[key] is not None}
 
     def _make_sfc_classifier_dict(self, sfcc_db, fields=None):
         LOG.debug(_('sfcc_db %s'), sfcc_db)

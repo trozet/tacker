@@ -191,7 +191,7 @@ def _validate_ip_address(data, valid_values=None):
 
 
 def _validate_port(data, valid_values=None):
-    return _validate_range(data, valid_values=[1, 66535])
+    return _validate_range(data, valid_values=[0, 65535])
 
 
 def _validate_ip_network(data, valid_values=None):
