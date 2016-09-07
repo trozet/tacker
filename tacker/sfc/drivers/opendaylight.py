@@ -316,7 +316,7 @@ class DeviceOpenDaylight():
         LOG.debug(_('ODL SFC create output:%s'), sfc_result.text)
 
         # try to create SFP
-        sfp_json = self.create_sfp_json(sfc_dict)
+        sfp_json = self.create_sfp_json(sfc_dict, vnf_dict, sff_list)
         sfp_result = self.create_odl_sfp(sfp_json=sfp_json)
 
         if sfp_result.status_code not in _VALID_RESP_CODES:
@@ -354,11 +354,29 @@ class DeviceOpenDaylight():
         return rsp_dict
 
     @staticmethod
-    def create_sfp_json(sfc_dict):
+    def create_sfp_json(sfc_dict, vnf_dict, sff_list):
+        hop_num = 0
         sfp_dict = {'service-function-path': list()}
         sfp_def = {'name': "Path-%s" % (sfc_dict['name']),
                    'service-chain-name': sfc_dict['name'],
                    'symmetric': sfc_dict['symmetrical']}
+        path_hop = list()
+        for sf in sfc_dict['chain']:
+            sf_name = vnf_dict[sf]['name']
+            sff_name = None
+            for sff in sff_list:
+                for sff_sf in sff['service-function-dictionary']:
+                    if sff_sf['name'] == sf_name:
+                        sff_name = sff['name']
+                        break
+                if sff_name is not None:
+                    break
+            path_hop.append({'hop-number': hop_num,
+                             'service-function-name': sf_name,
+                             'service-function-forwarder': sff_name})
+            hop_num += 1
+
+        sfp_def['service-path-hop'] = path_hop
         sfp_dict['service-function-path'].append(sfp_def)
 
         return sfp_dict
