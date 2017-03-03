@@ -27,14 +27,20 @@ import yaml
 
 from heatclient import client as heat_client
 from heatclient import exc as heatException
-from keystoneclient.v2_0 import client as ks_client
+
 from oslo_config import cfg
 
 from tacker.common import log
+from tacker.common import utils as common_utils
 from tacker.extensions import vnfm
 from tacker.openstack.common import jsonutils
 from tacker.openstack.common import log as logging
 from tacker.vm.drivers import abstract_driver
+
+if common_utils.is_auth_uri_v3(cfg.CONF.keystone_authtoken.auth_uri):
+    from keystoneclient.v3 import client as ks_client
+else:
+    from keystoneclient.v2_0 import client as ks_client
 
 
 LOG = logging.getLogger(__name__)
@@ -451,7 +457,9 @@ class DeviceHeat(abstract_driver.DeviceAbstractDriver):
 class HeatClient:
     def __init__(self, context, password=None):
         # context, password are unused
-        auth_url = CONF.keystone_authtoken.auth_uri
+        auth_url = common_utils.format_auth_uri_version(
+            cfg.CONF.keystone_authtoken.auth_uri)
+
         authtoken = CONF.keystone_authtoken
         kc = ks_client.Client(
             tenant_name=authtoken.project_name,

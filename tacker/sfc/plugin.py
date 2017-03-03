@@ -27,6 +27,7 @@ from sqlalchemy.orm import exc as orm_exc
 
 from tacker.api.v1 import attributes
 from tacker.common import driver_manager
+from tacker.common import utils as common_utils
 from tacker import context as t_context
 from tacker.db.sfc import sfc_db
 from tacker.extensions import sfc
@@ -196,7 +197,8 @@ class SFCPlugin(sfc_db.SFCPluginDb):
 
 class NeutronClient:
     def __init__(self):
-        auth_url = cfg.CONF.keystone_authtoken.auth_uri
+        auth_url = common_utils.format_auth_uri_version(
+            cfg.CONF.keystone_authtoken.auth_uri)
         authtoken = cfg.CONF.keystone_authtoken
         kwargs = {
             'password': authtoken.password,
