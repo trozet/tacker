@@ -25,6 +25,7 @@ import logging as std_logging
 import multiprocessing
 import os
 import random
+import re
 import signal
 import socket
 import uuid
@@ -299,3 +300,13 @@ def cpu_count():
         return multiprocessing.cpu_count()
     except NotImplementedError:
         return 1
+
+
+def is_auth_uri_v3(auth_url):
+    return (re.match('.+v3/?$', auth_url) is not None)
+
+
+def format_auth_uri_version(auth_url):
+    if re.match('.+(v3/?|v2\.0/?)$', auth_url) is None:
+        auth_url = '{0}/v2.0'.format(auth_url)
+    return auth_url

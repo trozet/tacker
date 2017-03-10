@@ -23,16 +23,21 @@ import six
 import threading
 import time
 
-from keystoneclient.v2_0 import client as ks_client
 from oslo_config import cfg
 from oslo_utils import timeutils
 
 from tacker.agent.linux import utils as linux_utils
+from tacker.common import utils as common_utils
 from tacker import context as t_context
 from tacker.i18n import _LW
 from tacker.openstack.common import jsonutils
 from tacker.openstack.common import log as logging
 from tacker.vm.drivers.heat import heat
+
+if common_utils.is_auth_uri_v3(cfg.CONF.keystone_authtoken.auth_uri):
+    from keystoneclient.v3 import client as ks_client
+else:
+    from keystoneclient.v2_0 import client as ks_client
 
 
 LOG = logging.getLogger(__name__)
@@ -208,8 +213,9 @@ class Respawn(FailurePolicy):
             new_device[key] = device_dict[key]
         LOG.debug(_('new_device %s'), new_device)
 
-        # keystone v2.0 specific
-        auth_url = CONF.keystone_authtoken.auth_uri + '/v2.0'
+        auth_url = common_utils.format_auth_uri_version(
+            CONF.keystone_authtoken.auth_uri)
+
         authtoken = CONF.keystone_authtoken
         kc = ks_client.Client(
             tenant_name=authtoken.project_name,
@@ -255,8 +261,9 @@ class RespawnHeat(FailurePolicy):
         heatclient = heat.HeatClient(None)
         heatclient.delete(device_dict['instance_id'])
 
-        # keystone v2.0 specific
-        auth_url = CONF.keystone_authtoken.auth_uri + '/v2.0'
+        auth_url = common_utils.format_auth_uri_version(
+            CONF.keystone_authtoken.auth_uri)
+
         authtoken = CONF.keystone_authtoken
         kc = ks_client.Client(
             tenant_name=authtoken.project_name,

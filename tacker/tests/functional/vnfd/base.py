@@ -12,12 +12,14 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
+import re
 import time
 
 from oslo_config import cfg
 from tempest_lib.tests import base
 
 from tacker import version
+from tacker.common import utils as common_utils
 from tackerclient.v1_0 import client as tacker_client
 
 CONF = cfg.CONF
@@ -58,7 +60,9 @@ class BaseTackerTest(base.TestCase):
         username = cfg.CONF.keystone_authtoken.username
         password = cfg.CONF.keystone_authtoken.password
         tenant_name = cfg.CONF.keystone_authtoken.project_name
-        auth_uri = cfg.CONF.keystone_authtoken.auth_uri + '/v2.0'
+        auth_uri = common_utils.format_auth_uri_version(
+            cfg.CONF.keystone_authtoken.auth_uri)
+
         return tacker_client.Client(username=username, password=password,
                                  tenant_name=tenant_name,
                                  auth_url=auth_uri)
