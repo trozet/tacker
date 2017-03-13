@@ -34,6 +34,8 @@ from tacker.extensions import sfc
 from tacker.openstack.common import excutils
 from tacker.openstack.common import log as logging
 from tacker.plugins.common import constants
+from keystoneauth1.identity import v3
+from keystoneauth1 import session
 from neutronclient.v2_0 import client as neutron_client
 from tacker.db.vm.vm_db import VNFMPluginDb
 from tacker import manager
@@ -200,13 +202,23 @@ class NeutronClient:
         auth_url = common_utils.format_auth_uri_version(
             cfg.CONF.keystone_authtoken.auth_uri)
         authtoken = cfg.CONF.keystone_authtoken
-        kwargs = {
-            'password': authtoken.password,
-            'tenant_name': authtoken.project_name,
-            'username': authtoken.username,
-            'auth_url': auth_url,
-        }
-        self.client = neutron_client.Client(**kwargs)
+        if common_utils.is_auth_uri_v3(auth_url):
+            auth = v3.Password(auth_url=auth_url,
+                               username=authtoken.username,
+                               password=authtoken.password,
+                               project_name=authtoken.project_name,
+                               user_domain_id=authtoken.user_domain_id,
+                               project_domain_id=authtoken.project_domain_id)
+            sess = session.Session(auth=auth)
+            self.client = neutron_client.Client(session=sess)
+        else:
+            kwargs = {
+                'password': authtoken.password,
+                'tenant_name': authtoken.project_name,
+                'username': authtoken.username,
+                'auth_url': auth_url,
+            }
+            self.client = neutron_client.Client(**kwargs)
 
     def list_neutron_ports(self):
         LOG.debug("list_ports()", )
